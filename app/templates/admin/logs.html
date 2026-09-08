@@ -1,0 +1,86 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Activity Logs{% endblock %}
+{% block page_title %}Activity Logs{% endblock %}
+{% block content %}
+
+<!-- Filter -->
+<div style="display:flex;gap:.5rem;margin-bottom:1.5rem;flex-wrap:wrap;">
+  <form method="GET" action="{{ url_for('admin.logs') }}" style="display:flex;gap:.5rem;flex:1;min-width:200px;">
+    <div class="input-group">
+      <span class="adm-input-group-text input-group-text"><i class="bi bi-funnel" style="color:#5eead4;"></i></span>
+      <input type="text" class="form-control adm-search-input" name="action" value="{{ action_filter }}" placeholder="Filter by action (login, upload, share, delete…)">
+    </div>
+    <button type="submit" class="btn adm-btn-primary px-3">Filter</button>
+    {% if action_filter %}<a href="{{ url_for('admin.logs') }}" class="btn adm-btn-secondary">Clear</a>{% endif %}
+  </form>
+  <div style="display:flex;align-items:center;gap:.4rem;font-size:.72rem;color:rgba(255,255,255,.35);">
+    <i class="bi bi-journal-text" style="color:#5eead4;"></i>
+    Page {{ page }} / {{ total_pages }}
+  </div>
+</div>
+
+<div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);border-radius:17px;overflow:hidden;">
+  <div class="adm-section-header" style="padding:15px 22px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <h4 style="margin:0;"><i class="bi bi-journal-text" style="color:#5eead4;"></i>
+        Activity Log {% if action_filter %}<small class="adm-muted" style="font-weight:400;"> — "{{ action_filter }}"</small>{% endif %}
+      </h4>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="adm-table">
+      <thead>
+        <tr><th>User</th><th>Action</th><th>Target</th><th>Details</th><th>IP</th><th>Time</th></tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td>
+            {% if log.username %}
+            <div style="display:flex;align-items:center;gap:.5rem;">
+              <span class="adm-avatar" style="width:28px;height:28px;font-size:.7rem;margin-right:0;">{{ log.username[0].upper() }}</span>
+              <span>{{ log.username }}</span>
+            </div>
+            {% else %}<span class="adm-muted" style="font-style:italic;font-size:.78rem;">system</span>{% endif %}
+          </td>
+          <td>
+            <code style="font-size:.7rem;padding:.15rem .5rem;border-radius:5px;font-weight:700;
+              {% if 'login' in log.action %}background:rgba(63,185,80,.1);color:#3fb950;
+              {% elif 'delete' in log.action or 'perm' in log.action %}background:rgba(239,68,68,.1);color:#f87171;
+              {% elif 'upload' in log.action %}background:rgba(45,212,191,.1);color:#5eead4;
+              {% elif 'share' in log.action %}background:rgba(99,102,241,.1);color:#818cf8;
+              {% elif 'admin' in log.action %}background:rgba(168,85,247,.1);color:#c084fc;
+              {% else %}background:rgba(255,255,255,.06);color:rgba(255,255,255,.55);{% endif %}">
+              {{ log.action }}
+            </code>
+          </td>
+          <td style="font-size:.8rem;color:rgba(255,255,255,.45);">
+            {{ log.target_type or '' }}{% if log.target_id %} <span style="background:rgba(255,255,255,.06);border-radius:4px;padding:.1rem .35rem;font-size:.7rem;">#{{ log.target_id }}</span>{% endif %}
+          </td>
+          <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.78rem;color:rgba(255,255,255,.40);" title="{{ log.details or '' }}">{{ log.details or '—' }}</td>
+          <td style="font-size:.72rem;color:rgba(255,255,255,.25);font-family:monospace;">{{ log.ip_address or '—' }}</td>
+          <td style="font-size:.72rem;color:rgba(255,255,255,.35);white-space:nowrap;">{{ log.created_at.strftime('%d %b %Y %H:%M') }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center;padding:3rem;color:rgba(255,255,255,.25);">No activity recorded yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if total_pages > 1 %}
+  <div style="padding:.875rem 1.25rem;border-top:1px solid rgba(255,255,255,.06);display:flex;justify-content:center;gap:.3rem;">
+    {% if page > 1 %}
+    <a href="?page={{ page-1 }}&action={{ action_filter }}" class="btn btn-sm adm-btn-secondary">‹ Prev</a>
+    {% endif %}
+    {% for p in range([1,page-2]|max, [total_pages,page+2]|min + 1) %}
+    <a href="?page={{ p }}&action={{ action_filter }}"
+       class="btn btn-sm {% if p==page %}adm-btn-primary{% else %}adm-btn-secondary{% endif %}">{{ p }}</a>
+    {% endfor %}
+    {% if page < total_pages %}
+    <a href="?page={{ page+1 }}&action={{ action_filter }}" class="btn btn-sm adm-btn-secondary">Next ›</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

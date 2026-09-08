@@ -1,0 +1,204 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block page_title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Topbar override for dashboard -->
+<script>document.querySelector('.adm-page-title').textContent = 'Admin Dashboard';document.querySelector('.adm-page-sub').textContent = 'Monitor and manage your File Storage platform.';</script>
+<div style="color:rgba(255,255,255,.65);font-size:13px;margin-top:-20px;margin-bottom:20px;">Welcome Admin</div>
+
+<!-- ── Stat cards ── -->
+<div class="row g-4 mb-4">
+  <div class="col-xl-3 col-md-6">
+    <div class="adm-stat-card">
+      <div class="adm-stat-top">
+        <div class="adm-stat-icon"><i class="bi bi-people"></i></div>
+        <div class="adm-stat-change">Platform</div>
+      </div>
+      <div class="adm-stat-number">{{ stats.total_users }}</div>
+      <div class="adm-stat-label">Total Users</div>
+    </div>
+  </div>
+  <div class="col-xl-3 col-md-6">
+    <div class="adm-stat-card">
+      <div class="adm-stat-top">
+        <div class="adm-stat-icon"><i class="bi bi-file-earmark"></i></div>
+        <div class="adm-stat-change">Files</div>
+      </div>
+      <div class="adm-stat-number">{{ stats.total_files }}</div>
+      <div class="adm-stat-label">Total Files</div>
+    </div>
+  </div>
+  <div class="col-xl-3 col-md-6">
+    <div class="adm-stat-card">
+      <div class="adm-stat-top">
+        <div class="adm-stat-icon"><i class="bi bi-folder2-open"></i></div>
+        <div class="adm-stat-change">Organized</div>
+      </div>
+      <div class="adm-stat-number">{{ stats.total_folders }}</div>
+      <div class="adm-stat-label">Total Folders</div>
+    </div>
+  </div>
+  <div class="col-xl-3 col-md-6">
+    <div class="adm-stat-card">
+      <div class="adm-stat-top">
+        <div class="adm-stat-icon"><i class="bi bi-activity"></i></div>
+        <div class="adm-stat-change">Live</div>
+      </div>
+      <div class="adm-stat-number">{{ recent_logs|length }}</div>
+      <div class="adm-stat-label">Total Activities</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Quick Actions (7 cards like reference) ── -->
+<div class="adm-quick-grid mb-4" style="grid-template-columns:repeat(4,1fr);">
+  <a href="{{ url_for('admin.users') }}" class="adm-quick-action">
+    <i class="bi bi-person-plus"></i><span>Manage Users</span>
+  </a>
+  <a href="{{ url_for('admin.files') }}" class="adm-quick-action">
+    <i class="bi bi-file-earmark-text"></i><span>Manage Files</span>
+  </a>
+  <a href="{{ url_for('admin.logs') }}" class="adm-quick-action">
+    <i class="bi bi-clock-history"></i><span>View Activity</span>
+  </a>
+  <a href="{{ url_for('admin.plans') }}" class="adm-quick-action">
+    <i class="bi bi-box-seam"></i><span>Storage Plans</span>
+  </a>
+  <a href="{{ url_for('admin.search') }}" class="adm-quick-action">
+    <i class="bi bi-search"></i><span>Global Search</span>
+  </a>
+  <a href="{{ url_for('admin.security') }}" class="adm-quick-action">
+    <i class="bi bi-shield-lock"></i><span>Security</span>
+  </a>
+  <a href="{{ url_for('admin.tickets') }}" class="adm-quick-action" style="position:relative;">
+    <i class="bi bi-headset"></i><span>Support Ticket</span>
+    {% if stats.open_tickets > 0 %}
+    <span style="position:absolute;top:8px;right:10px;background:#ef4444;color:#fff;font-size:.58rem;font-weight:700;padding:.1rem .4rem;border-radius:99px;">{{ stats.open_tickets }}</span>
+    {% endif %}
+  </a>
+  <a href="{{ url_for('auth.profile') }}" class="adm-quick-action">
+    <i class="bi bi-person-circle"></i><span>My Profile</span>
+  </a>
+</div>
+
+<!-- ── Chart + Activity row ── -->
+<div class="row g-4 mb-4">
+
+  <!-- Monthly upload chart -->
+  <div class="col-lg-8">
+    <div class="adm-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+        <div>
+          <div class="adm-panel-title" style="margin-bottom:0;">
+            <i class="bi bi-graph-up" style="color:#fbbf24;"></i> Monthly File Uploads
+          </div>
+          <div style="font-size:9px;color:rgba(255,255,255,.30);margin-top:4px;">Files uploaded per month this year</div>
+        </div>
+        <a href="{{ url_for('admin.logs') }}" style="font-size:9px;color:rgba(255,255,255,.35);text-decoration:none;" onmouseover="this.style.color='#5eead4'" onmouseout="this.style.color='rgba(255,255,255,.35)'">View Logs →</a>
+      </div>
+      <div class="adm-chart-container">
+        <canvas id="uploadChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent activity -->
+  <div class="col-lg-4">
+    <div class="adm-panel" style="height:100%;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+        <div class="adm-panel-title" style="margin-bottom:0;">
+          <i class="bi bi-activity" style="color:#5eead4;"></i> Recent Activity
+        </div>
+        <a href="{{ url_for('admin.logs') }}" style="font-size:9px;color:rgba(255,255,255,.35);text-decoration:none;" onmouseover="this.style.color='#5eead4'" onmouseout="this.style.color='rgba(255,255,255,.35)'">All →</a>
+      </div>
+      <div>
+        {% for log in recent_logs[:6] %}
+        <div class="adm-activity-item">
+          <div class="adm-activity-dot">
+            <i class="bi bi-{% if 'login' in log.action %}box-arrow-in-right{% elif 'upload' in log.action %}cloud-arrow-up{% elif 'delete' in log.action %}trash{% elif 'share' in log.action %}share{% else %}activity{% endif %}"></i>
+          </div>
+          <div class="adm-activity-text">
+            <span class="adm-activity-user">{{ log.username or 'System' }}</span> — {{ log.action }}
+            <span class="adm-activity-time">{{ log.created_at.strftime('%d %b %Y %H:%M') }}</span>
+          </div>
+        </div>
+        {% else %}
+        <div style="text-align:center;color:rgba(255,255,255,.25);padding:2rem;font-size:.825rem;">No activity yet</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Summary stats row ── -->
+<div class="row g-4">
+  <div class="col-md-6">
+    <div class="adm-panel">
+      <div class="adm-panel-title"><i class="bi bi-bar-chart-fill" style="color:#60a5fa;"></i> Platform Summary</div>
+      {% for label, val, color in [
+        ('Active Users', stats.active_users, '#5eead4'),
+        ('Open Tickets', stats.open_tickets, '#f87171'),
+        ('Total Revenue', '$' ~ '%.0f'|format(stats.total_revenue|float), '#c084fc'),
+        ('Total Storage', storage_human, '#60a5fa'),
+        ('Today Uploads', today_uploads, '#fbbf24'),
+      ] %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.6rem 0;{% if not loop.last %}border-bottom:1px solid rgba(255,255,255,.05);{% endif %}">
+        <span style="font-size:.8rem;color:rgba(255,255,255,.45);">{{ label }}</span>
+        <span style="font-size:.9rem;font-weight:700;color:{{ color }};">{{ val }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="adm-panel">
+      <div class="adm-panel-title"><i class="bi bi-people-fill" style="color:#5eead4;"></i> Recent Users</div>
+      {% for u in recent_users %}
+      <div style="display:flex;align-items:center;gap:.75rem;padding:.55rem 0;{% if not loop.last %}border-bottom:1px solid rgba(255,255,255,.05);{% endif %}">
+        <div style="width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,rgba(45,212,191,.15),rgba(139,92,246,.15));border:1px solid rgba(45,212,191,.10);color:#5eead4;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;flex-shrink:0;">{{ u.username[0].upper() }}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:.8rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ u.username }}</div>
+          <div style="font-size:.68rem;color:rgba(255,255,255,.25);">{{ u.created_at.strftime('%d %b %Y') }}</div>
+        </div>
+        <span style="width:7px;height:7px;border-radius:50%;background:{% if u.is_active %}#2dd4bf{% else %}#ef4444{% endif %};flex-shrink:0;"></span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+Chart.defaults.color = 'rgba(255,255,255,.45)';
+const gridColor = 'rgba(255,255,255,.04)';
+
+new Chart(document.getElementById('uploadChart'), {
+  type: 'line',
+  data: {
+    labels: {{ monthly_labels | safe }},
+    datasets: [{
+      label: 'Files Uploaded',
+      data: {{ monthly_data | safe }},
+      borderWidth: 2, tension: 0.4, fill: true,
+      backgroundColor: 'rgba(45,212,191,.08)',
+      borderColor: '#2dd4bf',
+      pointBackgroundColor: '#5eead4',
+      pointBorderColor: '#080b12',
+      pointRadius: 4, pointHoverRadius: 6
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: gridColor }, ticks: { color: 'rgba(255,255,255,.35)', font: { size: 9 } } },
+      y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: 'rgba(255,255,255,.35)', font: { size: 9 }, stepSize: 1 } }
+    }
+  }
+});
+</script>
+{% endblock %}

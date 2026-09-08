@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="theme-color" content="#00d4d4">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SecureVault">
+  <meta name="application-name" content="SecureVault">
+  <meta name="description" content="Secure File Storage and Access Management">
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json">
+  <!-- Apple touch icons -->
+  <link rel="apple-touch-icon" href="/static/img/icon-152.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="/static/img/icon-152.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/static/img/icon-192.png">
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="96x96" href="/static/img/icon-96.png">
+  <title>{% block title %}SecureVault{% endblock %} — SecureVault</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/app.css') }}" rel="stylesheet">
+  {% block head %}{% endblock %}
+</head>
+<body>
+<div class="app-shell">
+<!-- Mobile sidebar overlay -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <!-- ═══════════ SIDEBAR ═══════════ -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon"><i class="bi bi-shield-lock-fill"></i></div>
+      <div>
+        <div class="brand-name">SecureVault</div>
+        <div class="brand-tagline">Secure File Storage</div>
+      </div>
+    </div>
+
+    <div class="sidebar-nav">
+      <div class="nav-section">Workspace</div>
+
+      <a href="{{ url_for('files.dashboard') }}"
+         class="nav-link {% if request.endpoint == 'files.dashboard' %}active{% endif %}">
+        <span class="nav-icon"><i class="bi bi-grid-1x2-fill"></i></span>
+        <span>Dashboard</span>
+      </a>
+
+      <a href="{{ url_for('files.my_files') }}"
+         class="nav-link {% if request.endpoint in ['files.my_files', 'files.files_in_folder'] %}active{% endif %}">
+        <span class="nav-icon"><i class="bi bi-folder2-open"></i></span>
+        <span>My Files</span>
+      </a>
+
+      <a href="{{ url_for('sharing.shared_with_me') }}"
+         class="nav-link {% if request.endpoint == 'sharing.shared_with_me' %}active{% endif %}">
+        <span class="nav-icon"><i class="bi bi-share-fill"></i></span>
+        <span>Shared With Me</span>
+      </a>
+
+      <a href="{{ url_for('sharing.shared_by_me') }}"
+         class="nav-link {% if request.endpoint == 'sharing.shared_by_me' %}active{% endif %}">
+        <span class="nav-icon"><i class="bi bi-people-fill"></i></span>
+        <span>Shared By Me</span>
+      </a>
+
+      <a href="{{ url_for('trash.trash') }}"
+         class="nav-link {% if request.endpoint == 'trash.trash' %}active{% endif %}">
+        <span class="nav-icon"><i class="bi bi-trash3-fill"></i></span>
+        <span>Recycle Bin</span>
+      </a>
+
+      <div class="nav-section">Account</div>
+
+      <a href="{{ url_for('storage.overview') }}"
+         class="nav-link {% if request.endpoint in ['storage.overview','storage.checkout'] %}active{% endif %}">
+        <span class="nav-icon"><i class="bi bi-hdd-fill"></i></span>
+        <span>Storage &amp; Plans</span>
+      </a>
+
+      <a href="{{ url_for('notif.notifications') }}"
+         class="nav-link {% if request.endpoint == 'notif.notifications' %}active{% endif %}">
+        <span class="nav-icon"><i class="bi bi-bell-fill"></i></span>
+        <span>Notifications</span>
+        {% if unread is defined and unread > 0 %}
+          <span class="nav-badge">{{ unread if unread < 100 else '99+' }}</span>
+        {% endif %}
+      </a>
+
+      <a href="{{ url_for('support.support') }}"
+         class="nav-link {% if request.endpoint in ['support.support','support.view_ticket'] %}active{% endif %}">
+        <span class="nav-icon"><i class="bi bi-headset"></i></span>
+        <span>Support</span>
+      </a>
+
+      <a href="{{ url_for('auth.profile') }}"
+         class="nav-link {% if request.endpoint == 'auth.profile' %}active{% endif %}">
+        <span class="nav-icon"><i class="bi bi-person-circle"></i></span>
+        <span>My Profile</span>
+      </a>
+
+      {% if session.get('role') == 'admin' %}
+      <div class="nav-section">Administration</div>
+      <a href="{{ url_for('admin.dashboard') }}" class="nav-link">
+        <span class="nav-icon"><i class="bi bi-speedometer2"></i></span>
+        <span>Admin Panel</span>
+        <span class="nav-chip">ADMIN</span>
+      </a>
+      {% endif %}
+    </div>
+
+    <!-- Storage bar -->
+    {% if used_pct is defined %}
+    <div class="sidebar-storage">
+      <div class="storage-label">
+        <span>{{ used_human }} used</span>
+        <span>{{ limit_human }}</span>
+      </div>
+      <div class="storage-track">
+        <div class="storage-fill {% if used_pct >= 90 %}danger{% elif used_pct >= 75 %}warn{% endif %}"
+             style="width: {{ used_pct }}%"></div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar">{{ session.get('username','?')[0].upper() }}</div>
+        <div>
+          <div class="user-name-sb">{{ session.get('username') }}</div>
+          <div class="user-role-sb">{{ session.get('role','user') | capitalize }}</div>
+        </div>
+        <a href="{{ url_for('auth.logout') }}" class="logout-btn" title="Logout">
+          <i class="bi bi-box-arrow-right"></i>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ═══════════ MAIN ═══════════ -->
+  <div class="main-content">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <button class="icon-btn d-lg-none" id="sidebar-toggle" aria-label="Toggle sidebar">
+        <i class="bi bi-list fs-5"></i>
+      </button>
+      <div class="topbar-title">{% block page_title %}{% endblock %}</div>
+      <div class="topbar-actions">
+        <!-- Dashboard shortcut button -->
+        {% if session.get('role') == 'admin' %}
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-sm btn-light" style="font-size:.75rem;font-weight:600;">
+          <i class="bi bi-speedometer2 me-1"></i>Admin Dashboard
+        </a>
+        {% else %}
+        <a href="{{ url_for('files.dashboard') }}" class="btn btn-sm btn-light" style="font-size:.75rem;font-weight:600;">
+          <i class="bi bi-grid-1x2-fill me-1"></i>Dashboard
+        </a>
+        {% endif %}
+        <a href="{{ url_for('notif.notifications') }}" class="icon-btn" title="Notifications">
+          <i class="bi bi-bell"></i>
+          {% if unread is defined and unread > 0 %}<span class="badge-dot"></span>{% endif %}
+        </a>
+        <a href="{{ url_for('auth.profile') }}" class="topbar-avatar" title="Profile">
+          {{ session.get('username','?')[0].upper() }}
+        </a>
+      </div>
+    </div>
+
+    <!-- Flash messages -->
+    <div class="flash-zone">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible alert-auto mt-2" role="alert">
+          <i class="bi bi-{% if category == 'success' %}check-circle-fill{% elif category == 'danger' %}exclamation-circle-fill{% elif category == 'warning' %}exclamation-triangle-fill{% else %}info-circle-fill{% endif %}"></i>
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+      {% endwith %}
+    </div>
+
+    <!-- Content -->
+    <div class="page-body">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pwa.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

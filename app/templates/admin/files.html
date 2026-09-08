@@ -1,0 +1,282 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}File Management{% endblock %}
+{% block page_title %}File Management{% endblock %}
+
+{% block content %}
+
+<!-- Page header -->
+<div style="display:flex;justify-content:space-between;align-items:center;padding:20px 22px;margin-bottom:20px;border-radius:17px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div style="width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(45,212,191,.10);color:#5eead4;font-size:19px;"><i class="bi bi-folder-fill"></i></div>
+    <div>
+      <h2 style="margin:0;font-size:17px;font-weight:700;color:#fff;">File &amp; Storage Analytics</h2>
+      <p style="margin:4px 0 0;color:rgba(255,255,255,.35);font-size:10px;">Monitor files, storage usage and individual user activity.</p>
+    </div>
+  </div>
+  <a href="{{ url_for('admin.dashboard') }}" class="btn adm-btn-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Dashboard
+  </a>
+</div>
+
+<!-- Stat cards -->
+<div class="row g-4 mb-4">
+  <div class="col-xl-3 col-md-6">
+    <div class="adm-stat-card">
+      <div class="adm-stat-top">
+        <div class="adm-stat-icon" style="background:rgba(59,130,246,.12);color:#60a5fa;"><i class="bi bi-people-fill"></i></div>
+      </div>
+      <div class="adm-stat-label">Total Users</div>
+      <div class="adm-stat-number" style="margin-top:8px;">{{ user_stats|length }}</div>
+    </div>
+  </div>
+  <div class="col-xl-3 col-md-6">
+    <div class="adm-stat-card">
+      <div class="adm-stat-top">
+        <div class="adm-stat-icon" style="background:rgba(34,197,94,.12);color:#4ade80;"><i class="bi bi-files"></i></div>
+      </div>
+      <div class="adm-stat-label">Total Files</div>
+      <div class="adm-stat-number" style="margin-top:8px;">{{ all_files|length }}</div>
+    </div>
+  </div>
+  <div class="col-xl-3 col-md-6">
+    <div class="adm-stat-card">
+      <div class="adm-stat-top">
+        <div class="adm-stat-icon" style="background:rgba(245,158,11,.12);color:#fbbf24;"><i class="bi bi-hdd-fill"></i></div>
+      </div>
+      <div class="adm-stat-label">Storage Used</div>
+      <div class="adm-stat-number" style="margin-top:8px;font-size:1.4rem;">{{ storage_used_human }}</div>
+      <small style="color:rgba(255,255,255,.35);font-size:9px;">of {{ storage_limit_human }}</small>
+      <div class="adm-progress mt-2">
+        <div class="adm-progress-fill {% if storage_pct >= 90 %}adm-progress-danger{% elif storage_pct >= 70 %}adm-progress-warn{% else %}adm-progress-safe{% endif %}"
+             style="width:{{ storage_pct }}%"></div>
+      </div>
+      <small style="color:rgba(255,255,255,.35);font-size:9px;">{{ storage_pct }}% used</small>
+    </div>
+  </div>
+  <div class="col-xl-3 col-md-6">
+    <div class="adm-stat-card">
+      <div class="adm-stat-top">
+        <div class="adm-stat-icon" style="background:rgba(239,68,68,.12);color:#f87171;"><i class="bi bi-cloud-arrow-up-fill"></i></div>
+      </div>
+      <div class="adm-stat-label">Uploads Today</div>
+      <div class="adm-stat-number" style="margin-top:8px;">{{ today_uploads }}</div>
+      <small style="color:rgba(255,255,255,.35);font-size:9px;">{{ total_uploaders }} active uploaders</small>
+    </div>
+  </div>
+</div>
+
+<!-- Charts row -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-4">
+    <div class="adm-panel">
+      <div class="adm-panel-title"><i class="bi bi-pie-chart-fill" style="color:#5eead4;"></i> Overall Storage</div>
+      <div class="chart-container"><canvas id="storageChart"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="adm-panel">
+      <div class="adm-panel-title"><i class="bi bi-bar-chart-fill" style="color:#60a5fa;"></i> Files by User</div>
+      <div class="chart-container"><canvas id="userChart"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="adm-panel">
+      <div class="adm-panel-title"><i class="bi bi-graph-up" style="color:#fbbf24;"></i> Storage by User (MB)</div>
+      <div class="chart-container"><canvas id="storageUserChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- User statistics table -->
+<div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);border-radius:17px;overflow:hidden;margin-bottom:20px;">
+  <div class="adm-section-header">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+      <div>
+        <h4><i class="bi bi-person-lines-fill" style="color:#5eead4;"></i> Individual User Statistics</h4>
+        <small>Detailed storage and file statistics for every registered user.</small>
+      </div>
+      <div style="min-width:280px;">
+        <div class="input-group">
+          <span class="adm-input-group-text input-group-text"><i class="bi bi-search"></i></span>
+          <input type="text" id="userSearch" class="form-control adm-search-input" placeholder="Search user or email…">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="adm-table">
+      <thead>
+        <tr><th>ID</th><th>User</th><th>Status</th><th>Files</th><th>Used</th><th>Limit</th><th>Usage</th><th>Today</th></tr>
+      </thead>
+      <tbody id="userTable">
+        {% for u in user_stats %}
+        <tr>
+          <td><strong>#{{ u.id }}</strong></td>
+          <td>
+            <div style="display:flex;align-items:center;">
+              <span class="adm-avatar">{{ u.username[0].upper() }}</span>
+              <div>
+                <strong>{{ u.username }}</strong><br>
+                <small class="adm-muted">{{ u.email }}</small>
+              </div>
+            </div>
+          </td>
+          <td>
+            {% if u.is_active %}
+            <span class="adm-status adm-status-active"><i class="bi bi-check-circle-fill"></i> Active</span>
+            {% else %}
+            <span class="adm-status adm-status-inactive"><i class="bi bi-x-circle-fill"></i> Inactive</span>
+            {% endif %}
+          </td>
+          <td><strong>{{ u.file_count }}</strong></td>
+          <td>{{ u.used_human }}</td>
+          <td>{{ u.limit_human }}</td>
+          <td style="min-width:140px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:.3rem;">
+              <small style="color:rgba(255,255,255,.45);">{{ u.used_pct }}%</small>
+            </div>
+            <div class="adm-progress">
+              <div class="adm-progress-fill {% if u.used_pct >= 90 %}adm-progress-danger{% elif u.used_pct >= 70 %}adm-progress-warn{% else %}adm-progress-safe{% endif %}"
+                   style="width:{{ u.used_pct }}%"></div>
+            </div>
+          </td>
+          <td>
+            <span style="background:rgba(45,212,191,.12);border:1px solid rgba(45,212,191,.12);color:#5eead4;padding:4px 8px;border-radius:99px;font-size:9px;font-weight:700;">{{ u.today_uploads or 0 }}</span>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" style="text-align:center;padding:3rem;color:rgba(255,255,255,.25);">No users found</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- All files table -->
+<div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);border-radius:17px;overflow:hidden;">
+  <div class="adm-section-header">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+      <div>
+        <h4><i class="bi bi-files" style="color:#5eead4;"></i> All Uploaded Files</h4>
+        <small>View and manage files uploaded by users.</small>
+      </div>
+      <span style="background:rgba(45,212,191,.12);border:1px solid rgba(45,212,191,.12);color:#5eead4;padding:6px 12px;border-radius:99px;font-size:10px;font-weight:700;">{{ all_files|length }} Files</span>
+    </div>
+  </div>
+  <!-- File search -->
+  <div style="padding:.875rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.06);">
+    <form method="GET" action="{{ url_for('admin.files') }}" style="display:flex;gap:.5rem;">
+      <div class="input-group">
+        <span class="adm-input-group-text input-group-text"><i class="bi bi-search"></i></span>
+        <input type="text" name="q" value="{{ search }}" id="fileSearch" class="form-control adm-search-input" placeholder="Search file, owner…">
+      </div>
+      <button type="submit" class="btn adm-btn-primary btn-sm px-3">Search</button>
+      {% if search %}<a href="{{ url_for('admin.files') }}" class="btn adm-btn-secondary btn-sm">Clear</a>{% endif %}
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table class="adm-table">
+      <thead>
+        <tr><th>ID</th><th>File</th><th>Owner</th><th>Size</th><th>Type</th><th>Uploaded</th></tr>
+      </thead>
+      <tbody id="fileTable">
+        {% for f in all_files %}
+        <tr>
+          <td><strong>#{{ f.id }}</strong></td>
+          <td>
+            <div style="display:flex;align-items:center;">
+              <span class="adm-file-icon">
+                {% set ext = f.original_name.rsplit('.',1)[-1].lower() if '.' in f.original_name else '' %}
+                {% if ext == 'pdf' %}<i class="bi bi-file-earmark-pdf-fill" style="color:#f87171;"></i>
+                {% elif ext in ['jpg','jpeg','png','gif','webp','svg'] %}<i class="bi bi-file-earmark-image-fill" style="color:#60a5fa;"></i>
+                {% elif ext in ['doc','docx'] %}<i class="bi bi-file-earmark-word-fill" style="color:#60a5fa;"></i>
+                {% elif ext in ['xls','xlsx','csv'] %}<i class="bi bi-file-earmark-excel-fill" style="color:#4ade80;"></i>
+                {% elif ext in ['zip','rar','7z'] %}<i class="bi bi-file-earmark-zip-fill" style="color:#fbbf24;"></i>
+                {% elif ext in ['mp4','mov','avi'] %}<i class="bi bi-file-earmark-play-fill" style="color:#c084fc;"></i>
+                {% elif ext == 'mp3' %}<i class="bi bi-file-earmark-music-fill" style="color:#c084fc;"></i>
+                {% else %}<i class="bi bi-file-earmark-fill" style="color:#94a3b8;"></i>{% endif %}
+              </span>
+              <strong>{{ f.original_name }}</strong>
+            </div>
+          </td>
+          <td><i class="bi bi-person-circle me-1"></i>{{ f.owner }}</td>
+          <td>{{ f.size_human }}</td>
+          <td><small style="color:rgba(255,255,255,.40);">{{ f.mime_type or '—' }}</small></td>
+          <td><small style="color:rgba(255,255,255,.40);">{{ f.created_at.strftime('%d %b %Y, %I:%M %p') }}</small></td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" style="text-align:center;padding:3rem;color:rgba(255,255,255,.25);">
+            <i class="bi bi-folder-x" style="font-size:45px;"></i>
+            <div style="margin-top:.75rem;">No files uploaded yet.</div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+Chart.defaults.color = 'rgba(255,255,255,.45)';
+const gc = 'rgba(255,255,255,.04)';
+
+// Build chart data from user_stats
+const uNames   = [{% for u in user_stats %}"{{ u.username }}"{% if not loop.last %},{% endif %}{% endfor %}];
+const uFiles   = [{% for u in user_stats %}{{ u.file_count }}{% if not loop.last %},{% endif %}{% endfor %}];
+const uStorage = [{% for u in user_stats %}{{ (u.storage_used_bytes / 1048576)|round(2) }}{% if not loop.last %},{% endif %}{% endfor %}];
+
+const storageUsedMB  = {{ (storage_used_bytes / 1048576)|round(2) }};
+const storageLimitMB = Math.max({{ (storage_limit_bytes / 1048576)|round(2) }}, storageUsedMB + 1);
+const storageAvail   = Math.max(storageLimitMB - storageUsedMB, 0);
+
+// Storage doughnut
+new Chart(document.getElementById('storageChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Used', 'Available'],
+    datasets: [{ data: [storageUsedMB, storageAvail], backgroundColor: ['#2dd4bf', 'rgba(255,255,255,.08)'], borderWidth: 0 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, cutout: '70%',
+    plugins: { legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,.55)', padding: 15 } } }
+  }
+});
+
+// Files by user bar
+new Chart(document.getElementById('userChart'), {
+  type: 'bar',
+  data: {
+    labels: uNames,
+    datasets: [{ label: 'Files', data: uFiles, backgroundColor: 'rgba(45,212,191,.65)', borderColor: '#2dd4bf', borderWidth: 1, borderRadius: 6 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: 'rgba(255,255,255,.55)' } } },
+    scales: { x: { ticks: { color: 'rgba(255,255,255,.40)' }, grid: { color: gc } }, y: { beginAtZero: true, ticks: { color: 'rgba(255,255,255,.40)', stepSize: 1 }, grid: { color: gc } } }
+  }
+});
+
+// Storage by user bar
+new Chart(document.getElementById('storageUserChart'), {
+  type: 'bar',
+  data: {
+    labels: uNames,
+    datasets: [{ label: 'MB', data: uStorage, backgroundColor: 'rgba(139,92,246,.65)', borderColor: '#8b5cf6', borderWidth: 1, borderRadius: 6 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: 'rgba(255,255,255,.55)' } } },
+    scales: { x: { ticks: { color: 'rgba(255,255,255,.40)' }, grid: { color: gc } }, y: { beginAtZero: true, ticks: { color: 'rgba(255,255,255,.40)' }, grid: { color: gc } } }
+  }
+});
+
+// User live search
+document.getElementById('userSearch').addEventListener('keyup', function() {
+  const s = this.value.toLowerCase();
+  document.querySelectorAll('#userTable tr').forEach(r => r.style.display = r.textContent.toLowerCase().includes(s) ? '' : 'none');
+});
+</script>
+{% endblock %}

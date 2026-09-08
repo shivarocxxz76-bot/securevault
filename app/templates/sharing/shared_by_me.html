@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block title %}Shared By Me{% endblock %}
+{% block page_title %}Shared By Me{% endblock %}
+{% block content %}
+
+<div class="row g-4">
+  <div class="col-12">
+
+    <!-- File shares -->
+    <div class="sv-card mb-4">
+      <div class="section-header">
+        <div class="section-title"><i class="bi bi-file-earmark-arrow-up"></i> Files I've Shared</div>
+        <span class="text-muted" style="font-size:.75rem;">{{ file_shares|length }} item(s)</span>
+      </div>
+      {% if file_shares %}
+      <div class="table-responsive">
+        <table class="sv-table">
+          <thead><tr><th>File</th><th>Shared With</th><th>Permission</th><th>Date</th><th>Action</th></tr></thead>
+          <tbody>
+            {% for s in file_shares %}
+            <tr>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-file-earmark" style="font-size:1.1rem;color:var(--muted);"></i>
+                  <span style="font-weight:500;">{{ s.original_name }}</span>
+                </div>
+              </td>
+              <td>
+                <div style="font-weight:500;">{{ s.shared_with_name }}</div>
+                <div class="text-muted" style="font-size:.75rem;">{{ s.shared_with_email }}</div>
+              </td>
+              <td><span class="pill pill-{{ s.permission }}">{{ s.permission | capitalize }}</span></td>
+              <td class="text-muted">{{ s.created_at.strftime('%d %b %Y') }}</td>
+              <td>
+                <form method="POST" action="{{ url_for('sharing.revoke_file_share', share_id=s.id) }}">
+                  <button type="submit" class="btn btn-sm btn-outline-danger"
+                          data-confirm="Revoke access for {{ s.shared_with_name }}?">
+                    <i class="bi bi-x-circle me-1"></i>Revoke
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <div class="empty-icon"><i class="bi bi-share"></i></div>
+        <h5>No files shared yet</h5>
+        <p>Share files from your dashboard — they'll appear here.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Folder shares -->
+    <div class="sv-card">
+      <div class="section-header">
+        <div class="section-title"><i class="bi bi-folder-symlink"></i> Folders I've Shared</div>
+        <span class="text-muted" style="font-size:.75rem;">{{ folder_shares|length }} item(s)</span>
+      </div>
+      {% if folder_shares %}
+      <div class="table-responsive">
+        <table class="sv-table">
+          <thead><tr><th>Folder</th><th>Shared With</th><th>Permission</th><th>Date</th><th>Action</th></tr></thead>
+          <tbody>
+            {% for s in folder_shares %}
+            <tr>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-folder-fill" style="font-size:1.1rem;color:var(--warning);"></i>
+                  <span style="font-weight:500;">{{ s.folder_name }}</span>
+                </div>
+              </td>
+              <td>
+                <div style="font-weight:500;">{{ s.shared_with_name }}</div>
+                <div class="text-muted" style="font-size:.75rem;">{{ s.shared_with_email }}</div>
+              </td>
+              <td><span class="pill pill-{{ s.permission }}">{{ s.permission | capitalize }}</span></td>
+              <td class="text-muted">{{ s.created_at.strftime('%d %b %Y') }}</td>
+              <td>
+                <form method="POST" action="{{ url_for('sharing.revoke_folder_share', share_id=s.id) }}">
+                  <button type="submit" class="btn btn-sm btn-outline-danger"
+                          data-confirm="Revoke folder access for {{ s.shared_with_name }}?">
+                    <i class="bi bi-x-circle me-1"></i>Revoke
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <div class="empty-icon"><i class="bi bi-folder-x"></i></div>
+        <h5>No folders shared yet</h5>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

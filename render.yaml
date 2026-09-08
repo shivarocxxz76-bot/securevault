@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: securevault
+    runtime: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn \"app:create_app()\" --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: UPLOAD_FOLDER
+        value: /tmp/uploads
+      - key: DATABASE_URL
+        fromDatabase:
+          name: securevault-db
+          property: connectionString
+
+databases:
+  - name: securevault-db
+    databaseName: securevault
+    user: securevault

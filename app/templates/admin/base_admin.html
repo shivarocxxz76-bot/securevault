@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="theme-color" content="#00d4d4">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="SecureVault Admin">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/static/img/icon-152.png">
+  <link rel="icon" type="image/png" sizes="96x96" href="/static/img/icon-96.png">
+  <title>{% block title %}Admin{% endblock %} — SecureVault Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+/* ══════════════════════════════════════════════════
+   GLOBAL — matches PHP reference exactly
+══════════════════════════════════════════════════ */
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:"Segoe UI",Inter,system-ui,sans-serif;background:#080b12;color:#ffffff;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+
+/* Background glow — from reference */
+body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 20% 20%,rgba(45,212,191,.06),transparent 30%),radial-gradient(circle at 80% 80%,rgba(139,92,246,.06),transparent 30%);pointer-events:none;z-index:-1;}
+
+/* ── Layout ── */
+.adm-layout{display:flex;min-height:100vh;}
+
+/* ── Sidebar ── */
+.adm-sidebar{width:250px;min-height:100vh;position:fixed;left:0;top:0;padding:25px 18px;background:rgba(10,13,22,.96);border-right:1px solid rgba(255,255,255,.07);z-index:1000;display:flex;flex-direction:column;}
+.adm-logo{display:flex;align-items:center;gap:12px;padding:5px 10px 30px;}
+.adm-logo-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(45,212,191,.10);border:1px solid rgba(45,212,191,.22);color:#5eead4;box-shadow:0 0 18px rgba(45,212,191,.08);font-size:20px;flex-shrink:0;}
+.adm-logo-text{font-size:15px;font-weight:750;color:#fff;}
+.adm-logo-sub{font-size:9px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
+.adm-nav-title{padding:0 12px 10px;color:rgba(255,255,255,.25);font-size:9px;text-transform:uppercase;letter-spacing:1.5px;}
+.adm-nav-link{display:flex;align-items:center;gap:12px;height:45px;padding:0 13px;margin-bottom:5px;border-radius:11px;color:rgba(255,255,255,.48);text-decoration:none;font-size:12px;transition:.25s ease;}
+.adm-nav-link i{font-size:16px;width:20px;text-align:center;}
+.adm-nav-link:hover{color:#fff;background:rgba(255,255,255,.055);text-decoration:none;}
+.adm-nav-link.active{color:#fff;background:linear-gradient(90deg,rgba(45,212,191,.13),rgba(139,92,246,.10));border:1px solid rgba(45,212,191,.12);}
+.adm-nav-link.active i{color:#5eead4;}
+.adm-sidebar-bottom{margin-top:auto;padding-top:1rem;border-top:1px solid rgba(255,255,255,.06);}
+
+/* ── Main ── */
+.adm-main{width:calc(100% - 250px);margin-left:250px;min-height:100vh;padding:25px 32px;}
+
+/* ── Topbar ── */
+.adm-topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:30px;}
+.adm-page-title{font-size:24px;font-weight:750;letter-spacing:-.6px;color:#fff;}
+.adm-page-sub{color:rgba(255,255,255,.40);font-size:12px;margin-top:5px;}
+.adm-admin-profile{display:flex;align-items:center;gap:11px;padding:7px 12px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);}
+.adm-admin-avatar{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#2dd4bf,#8b5cf6);font-size:13px;color:#fff;font-weight:700;}
+.adm-admin-name{font-size:11px;font-weight:650;color:#fff;}
+.adm-admin-role{font-size:9px;color:rgba(255,255,255,.35);margin-top:2px;}
+
+/* ── Stat cards ── */
+.adm-stat-card{position:relative;padding:21px;min-height:145px;border-radius:17px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);overflow:hidden;transition:.3s ease;height:100%;}
+.adm-stat-card::after{content:"";position:absolute;width:100px;height:100px;right:-40px;bottom:-45px;border-radius:50%;background:rgba(45,212,191,.07);filter:blur(15px);}
+.adm-stat-card:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.13);}
+.adm-stat-top{display:flex;justify-content:space-between;align-items:center;}
+.adm-stat-icon{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:rgba(45,212,191,.10);color:#5eead4;font-size:17px;}
+.adm-stat-change{font-size:9px;color:#5eead4;padding:5px 8px;border-radius:20px;background:rgba(45,212,191,.08);}
+.adm-stat-number{margin-top:20px;font-size:27px;font-weight:750;letter-spacing:-1px;color:#fff;}
+.adm-stat-label{margin-top:3px;color:rgba(255,255,255,.40);font-size:10px;}
+
+/* ── Panel/card ── */
+.adm-panel{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);border-radius:17px;padding:22px;}
+.adm-panel-title{font-size:13px;font-weight:700;color:#fff;margin-bottom:18px;}
+.adm-section-header{padding:22px;border-bottom:1px solid rgba(255,255,255,.07);}
+.adm-section-header h4{font-weight:700;font-size:15px;margin-bottom:3px;color:#fff;}
+.adm-section-header small{color:rgba(255,255,255,.35);}
+
+/* ── Table ── */
+.adm-table{width:100%;border-collapse:collapse;color:#fff;margin-bottom:0;}
+.adm-table thead th{background:rgba(255,255,255,.055);color:rgba(255,255,255,.70);border:none;padding:15px;font-size:10px;white-space:nowrap;text-transform:uppercase;letter-spacing:.5px;}
+.adm-table tbody td{padding:14px 15px;vertical-align:middle;color:rgba(255,255,255,.70);border-color:rgba(255,255,255,.06);font-size:11px;}
+.adm-table tbody tr:hover{background:rgba(255,255,255,.025);}
+.adm-table strong{color:#fff;}
+
+/* ── Quick actions ── */
+.adm-quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px;}
+.adm-quick-action{display:flex;align-items:center;gap:11px;padding:15px;border-radius:12px;color:rgba(255,255,255,.65);text-decoration:none;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);transition:.25s ease;}
+.adm-quick-action:hover{color:#fff;background:rgba(255,255,255,.055);transform:translateY(-2px);text-decoration:none;}
+.adm-quick-action i{color:#5eead4;font-size:17px;}
+.adm-quick-action span{font-size:10px;font-weight:600;color:rgba(255,255,255,.65);}
+.adm-quick-action:hover span{color:#fff;}
+
+/* ── Activity ── */
+.adm-activity-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.055);}
+.adm-activity-item:last-child{border-bottom:none;}
+.adm-activity-dot{width:31px;height:31px;flex-shrink:0;border-radius:9px;display:flex;align-items:center;justify-content:center;background:rgba(45,212,191,.09);color:#5eead4;font-size:12px;}
+.adm-activity-text{font-size:10px;color:rgba(255,255,255,.65);line-height:1.5;}
+.adm-activity-user{color:#fff;font-weight:600;}
+.adm-activity-time{display:block;color:rgba(255,255,255,.25);font-size:8px;margin-top:3px;}
+
+/* ── Avatar ── */
+.adm-avatar{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,rgba(45,212,191,.15),rgba(139,92,246,.15));color:#5eead4;display:inline-flex;align-items:center;justify-content:center;font-weight:700;margin-right:10px;border:1px solid rgba(45,212,191,.10);}
+
+/* ── Status ── */
+.adm-status{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:20px;font-size:9px;font-weight:600;}
+.adm-status-active{background:rgba(34,197,94,.10);color:#4ade80;}
+.adm-status-inactive{background:rgba(239,68,68,.10);color:#f87171;}
+
+/* ── Progress ── */
+.adm-progress{height:8px;border-radius:20px;background:rgba(255,255,255,.08);overflow:hidden;}
+.adm-progress-fill{height:100%;border-radius:20px;transition:width .4s;}
+.adm-progress-safe{background:#2dd4bf;}
+.adm-progress-warn{background:#f59e0b;}
+.adm-progress-danger{background:#ef4444;}
+
+/* ── File icon ── */
+.adm-file-icon{width:38px;height:38px;border-radius:10px;background:rgba(45,212,191,.08);color:#5eead4;display:inline-flex;align-items:center;justify-content:center;font-size:17px;margin-right:8px;}
+
+/* ── Search ── */
+.adm-search-input{background:rgba(255,255,255,.035)!important;color:#fff!important;border:1px solid rgba(255,255,255,.08)!important;border-radius:8px;}
+.adm-search-input::placeholder{color:rgba(255,255,255,.30);}
+.adm-search-input:focus{background:rgba(255,255,255,.05)!important;border-color:rgba(45,212,191,.4)!important;box-shadow:0 0 0 .2rem rgba(45,212,191,.08)!important;color:#fff!important;}
+.adm-input-group-text{background:rgba(255,255,255,.035);color:rgba(255,255,255,.45);border:1px solid rgba(255,255,255,.08);}
+
+/* ── Buttons ── */
+.adm-btn-primary{background:rgba(45,212,191,.12);border:1px solid rgba(45,212,191,.20);color:#5eead4;}
+.adm-btn-primary:hover{background:rgba(45,212,191,.20);color:#fff;}
+.adm-btn-danger{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.20);color:#f87171;}
+.adm-btn-danger:hover{background:rgba(239,68,68,.20);color:#fff;}
+.adm-btn-secondary{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);color:rgba(255,255,255,.70);}
+.adm-btn-secondary:hover{background:rgba(255,255,255,.10);color:#fff;}
+.adm-btn-warning{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.20);color:#fbbf24;}
+.adm-btn-warning:hover{background:rgba(245,158,11,.20);color:#fff;}
+.adm-btn-success{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.20);color:#4ade80;}
+.adm-btn-success:hover{background:rgba(34,197,94,.20);color:#fff;}
+
+/* ── Form ── */
+.adm-form-control{background:rgba(255,255,255,.035)!important;border:1px solid rgba(255,255,255,.08)!important;color:#fff!important;border-radius:8px;}
+.adm-form-control:focus{background:rgba(255,255,255,.06)!important;border-color:rgba(45,212,191,.4)!important;box-shadow:0 0 0 3px rgba(45,212,191,.08)!important;color:#fff!important;}
+.adm-form-control::placeholder{color:rgba(255,255,255,.25)!important;}
+.adm-form-select{background:rgba(255,255,255,.035)!important;border:1px solid rgba(255,255,255,.08)!important;color:#fff!important;border-radius:8px;}
+.adm-form-label{color:rgba(255,255,255,.55);font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;}
+.adm-form-text{color:rgba(255,255,255,.30);font-size:.72rem;}
+
+/* ── Modal ── */
+.adm-modal .modal-content{background:#0d1117;border:1px solid rgba(255,255,255,.08);border-radius:16px;color:#fff;}
+.adm-modal .modal-header{border-bottom:1px solid rgba(255,255,255,.07);}
+.adm-modal .modal-footer{border-top:1px solid rgba(255,255,255,.07);}
+.adm-modal .btn-close{filter:invert(1) opacity(.6);}
+.adm-modal .modal-title{color:#fff;}
+
+/* ── Pagination ── */
+.adm-page-link{background:rgba(255,255,255,.04)!important;border:1px solid rgba(255,255,255,.07)!important;color:rgba(255,255,255,.55)!important;border-radius:6px!important;}
+.adm-page-link:hover{background:rgba(255,255,255,.08)!important;color:#fff!important;}
+.adm-page-active .adm-page-link{background:#2dd4bf!important;border-color:#2dd4bf!important;color:#080b12!important;font-weight:700!important;}
+
+/* ── Charts ── */
+.adm-chart-container{position:relative;height:280px;}
+
+/* ── Flash alerts ── */
+.adm-alert-success{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.20);color:#4ade80;border-radius:10px;padding:.7rem 1rem;font-size:.825rem;}
+.adm-alert-danger{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.20);color:#f87171;border-radius:10px;padding:.7rem 1rem;font-size:.825rem;}
+.adm-alert-info{background:rgba(45,212,191,.10);border:1px solid rgba(45,212,191,.20);color:#5eead4;border-radius:10px;padding:.7rem 1rem;font-size:.825rem;}
+.adm-alert-warning{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.20);color:#fbbf24;border-radius:10px;padding:.7rem 1rem;font-size:.825rem;}
+
+/* ── Text ── */
+.adm-muted{color:rgba(255,255,255,.35)!important;}
+.adm-teal{color:#5eead4;}
+
+/* ══════════════════════════════════════════════════
+   LEGACY CLASS OVERRIDES — fix all sv-* classes used
+   in tickets, plans, search, edit_plan, security
+══════════════════════════════════════════════════ */
+.sv-card{background:rgba(255,255,255,.035)!important;border:1px solid rgba(255,255,255,.07)!important;color:#fff!important;border-radius:17px!important;box-shadow:none!important;}
+.sv-card *{color:inherit;}
+.sv-card h6,.sv-card .fw-700,.sv-card .fw-800,.sv-card strong{color:#fff!important;}
+.sv-card .text-muted,.sv-card small{color:rgba(255,255,255,.40)!important;}
+.sv-card code{background:rgba(45,212,191,.1)!important;color:#5eead4!important;}
+.section-title{color:#fff!important;}
+.section-title i{color:#5eead4!important;}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
+
+/* sv-table override */
+.sv-table{color:#fff!important;width:100%;border-collapse:collapse;}
+.sv-table thead th{background:rgba(255,255,255,.055)!important;color:rgba(255,255,255,.65)!important;border:none!important;padding:14px 15px!important;font-size:10px!important;text-transform:uppercase!important;letter-spacing:.5px!important;}
+.sv-table tbody td{padding:13px 15px!important;vertical-align:middle!important;color:rgba(255,255,255,.70)!important;border-color:rgba(255,255,255,.06)!important;font-size:11px!important;}
+.sv-table tbody tr:hover td{background:rgba(255,255,255,.025)!important;}
+.sv-table strong{color:#fff!important;}
+
+/* pill overrides */
+.pill{border:1px solid rgba(255,255,255,.1)!important;}
+.pill-admin{background:rgba(45,212,191,.12)!important;color:#5eead4!important;}
+.pill-user{background:rgba(255,255,255,.06)!important;color:rgba(255,255,255,.55)!important;}
+.pill-active{background:rgba(34,197,94,.12)!important;color:#4ade80!important;}
+.pill-inactive{background:rgba(239,68,68,.12)!important;color:#f87171!important;}
+.pill-open{background:rgba(34,197,94,.12)!important;color:#4ade80!important;}
+.pill-closed{background:rgba(255,255,255,.06)!important;color:rgba(255,255,255,.45)!important;}
+.pill-in_progress{background:rgba(245,158,11,.12)!important;color:#fbbf24!important;}
+.pill-completed{background:rgba(34,197,94,.12)!important;color:#4ade80!important;}
+.pill-failed{background:rgba(239,68,68,.12)!important;color:#f87171!important;}
+.pill-pending{background:rgba(245,158,11,.12)!important;color:#fbbf24!important;}
+.pill-free{background:rgba(255,255,255,.06)!important;color:rgba(255,255,255,.45)!important;}
+.pill-basic{background:rgba(45,212,191,.1)!important;color:#5eead4!important;}
+.pill-pro{background:rgba(99,102,241,.12)!important;color:#818cf8!important;}
+.pill-enterprise{background:rgba(168,85,247,.12)!important;color:#c084fc!important;}
+.pill-view{background:rgba(45,212,191,.08)!important;color:#5eead4!important;}
+.pill-download{background:rgba(34,197,94,.10)!important;color:#4ade80!important;}
+
+/* Form controls */
+.form-control,.form-select,.form-label{color:#fff!important;}
+.form-control,.form-select{background:rgba(255,255,255,.04)!important;border:1px solid rgba(255,255,255,.1)!important;}
+.form-control:focus,.form-select:focus{background:rgba(255,255,255,.07)!important;border-color:rgba(45,212,191,.4)!important;box-shadow:0 0 0 3px rgba(45,212,191,.08)!important;color:#fff!important;}
+.form-control::placeholder{color:rgba(255,255,255,.25)!important;}
+.form-text,.form-label{color:rgba(255,255,255,.45)!important;}
+.input-group-text{background:rgba(255,255,255,.04)!important;border:1px solid rgba(255,255,255,.1)!important;color:rgba(255,255,255,.45)!important;}
+textarea.form-control{color:#fff!important;}
+select option{background:#0d1117!important;color:#fff!important;}
+
+/* Buttons */
+.btn-light{background:rgba(255,255,255,.06)!important;border:1px solid rgba(255,255,255,.10)!important;color:rgba(255,255,255,.75)!important;}
+.btn-light:hover{background:rgba(255,255,255,.10)!important;color:#fff!important;}
+.btn-sv-primary{background:linear-gradient(135deg,#2dd4bf,#8b5cf6)!important;border:none!important;color:#fff!important;}
+.btn-sv-primary:hover{opacity:.9!important;color:#fff!important;}
+.btn-outline-primary{border-color:rgba(45,212,191,.4)!important;color:#5eead4!important;}
+.btn-outline-primary:hover{background:rgba(45,212,191,.12)!important;color:#5eead4!important;}
+.btn-outline-secondary{border-color:rgba(255,255,255,.15)!important;color:rgba(255,255,255,.55)!important;}
+.btn-outline-secondary:hover{background:rgba(255,255,255,.06)!important;color:#fff!important;}
+.btn-outline-danger{border-color:rgba(239,68,68,.4)!important;color:#f87171!important;}
+.btn-outline-danger:hover{background:rgba(239,68,68,.12)!important;color:#f87171!important;}
+.btn-outline-success{border-color:rgba(34,197,94,.4)!important;color:#4ade80!important;}
+.btn-outline-success:hover{background:rgba(34,197,94,.12)!important;color:#4ade80!important;}
+.btn-outline-warning{border-color:rgba(245,158,11,.4)!important;color:#fbbf24!important;}
+.btn-outline-warning:hover{background:rgba(245,158,11,.12)!important;color:#fbbf24!important;}
+
+/* Empty state */
+.empty-state h5{color:#fff!important;}
+.empty-state p{color:rgba(255,255,255,.35)!important;}
+.empty-icon{background:rgba(255,255,255,.04)!important;border-color:rgba(255,255,255,.07)!important;color:rgba(255,255,255,.35)!important;}
+
+/* General text */
+.text-muted{color:rgba(255,255,255,.35)!important;}
+.fw-600,.fw-700,.fw-800,.fw-500{color:#fff;}
+p,span,div,label,small,li{color:inherit;}
+a{color:#5eead4;}
+a:hover{color:#2dd4bf;}
+h1,h2,h3,h4,h5,h6{color:#fff!important;}
+code{background:rgba(45,212,191,.1)!important;color:#5eead4!important;}
+
+/* Modal */
+.modal-content{background:#0d1117!important;border:1px solid rgba(255,255,255,.1)!important;color:#fff!important;}
+.modal-header,.modal-footer{border-color:rgba(255,255,255,.07)!important;}
+.modal-title{color:#fff!important;}
+.btn-close{filter:invert(1) opacity(.6)!important;}
+
+/* Pagination */
+.page-link{background:rgba(255,255,255,.04)!important;border-color:rgba(255,255,255,.07)!important;color:rgba(255,255,255,.55)!important;}
+.page-link:hover{background:rgba(255,255,255,.08)!important;color:#fff!important;}
+.page-item.active .page-link{background:#2dd4bf!important;border-color:#2dd4bf!important;color:#080b12!important;}
+.page-item.disabled .page-link{opacity:.3!important;}
+
+/* Alert */
+.alert{border-radius:10px!important;}
+.alert-success{background:rgba(34,197,94,.12)!important;border-color:rgba(34,197,94,.2)!important;color:#4ade80!important;}
+.alert-danger{background:rgba(239,68,68,.12)!important;border-color:rgba(239,68,68,.2)!important;color:#f87171!important;}
+.alert-info{background:rgba(45,212,191,.10)!important;border-color:rgba(45,212,191,.2)!important;color:#5eead4!important;}
+.alert-warning{background:rgba(245,158,11,.12)!important;border-color:rgba(245,158,11,.2)!important;color:#fbbf24!important;}
+.btn-close.btn-close-white{filter:none!important;}
+
+/* Log action badges */
+.log-action{background:rgba(45,212,191,.1)!important;color:#5eead4!important;}
+
+/* ── Mobile ── */
+@media(max-width:1100px){.adm-sidebar{width:220px;}.adm-main{width:calc(100% - 220px);margin-left:220px;padding:22px;}.adm-quick-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:850px){
+  .adm-sidebar{width:70px;padding:20px 10px;}
+  .adm-logo-text,.adm-logo-sub,.adm-nav-title,.adm-nav-link span{display:none;}
+  .adm-logo{justify-content:center;padding-bottom:30px;}
+  .adm-nav-link{justify-content:center;padding:0;}
+  .adm-nav-link i{margin:0;}
+  .adm-main{width:calc(100% - 70px);margin-left:70px;padding:22px 18px;}
+  .adm-quick-grid{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:600px){
+  .adm-main{padding:18px 13px;}
+  .adm-topbar{align-items:flex-start;}
+  .adm-admin-name,.adm-admin-role{display:none;}
+  .adm-page-title{font-size:21px;}
+  .adm-quick-grid{grid-template-columns:1fr;}
+}
+</style>
+  {% block head %}{% endblock %}
+</head>
+
+<body>
+<div class="adm-layout">
+
+<!-- Sidebar -->
+<aside class="adm-sidebar" id="adm-sidebar">
+  <div class="adm-logo">
+    <div class="adm-logo-icon"><i class="bi bi-shield-lock-fill"></i></div>
+    <div>
+      <div class="adm-logo-text">File Storage</div>
+      <div class="adm-logo-sub">Admin Panel</div>
+    </div>
+  </div>
+
+  <div class="adm-nav-title">Management</div>
+
+  <a href="{{ url_for('admin.dashboard') }}" class="adm-nav-link {% if request.endpoint=='admin.dashboard' %}active{% endif %}">
+    <i class="bi bi-grid-1x2-fill"></i><span>Dashboard</span>
+  </a>
+  <a href="{{ url_for('admin.users') }}" class="adm-nav-link {% if request.endpoint=='admin.users' %}active{% endif %}">
+    <i class="bi bi-people"></i><span>Users</span>
+  </a>
+  <a href="{{ url_for('admin.files') }}" class="adm-nav-link {% if request.endpoint=='admin.files' %}active{% endif %}">
+    <i class="bi bi-file-earmark"></i><span>Files</span>
+  </a>
+  <a href="{{ url_for('admin.logs') }}" class="adm-nav-link {% if request.endpoint=='admin.logs' %}active{% endif %}">
+    <i class="bi bi-activity"></i><span>Activity Logs</span>
+  </a>
+  <a href="{{ url_for('admin.plans') }}" class="adm-nav-link {% if request.endpoint in ['admin.plans','admin.edit_plan','admin.add_plan'] %}active{% endif %}">
+    <i class="bi bi-box-seam"></i><span>Storage Plans</span>
+  </a>
+  <a href="{{ url_for('admin.plans') }}" class="adm-nav-link {% if request.endpoint=='admin.payments' %}active{% endif %}">
+    <i class="bi bi-credit-card"></i><span>Payments</span>
+  </a>
+  <a href="{{ url_for('admin.search') }}" class="adm-nav-link {% if request.endpoint=='admin.search' %}active{% endif %}">
+    <i class="bi bi-search"></i><span>Global Search</span>
+  </a>
+  <a href="{{ url_for('admin.security') }}" class="adm-nav-link {% if request.endpoint=='admin.security' %}active{% endif %}">
+    <i class="bi bi-shield-lock"></i><span>Security</span>
+  </a>
+  <a href="{{ url_for('admin.tickets') }}" class="adm-nav-link {% if request.endpoint in ['admin.tickets','admin.ticket_detail'] %}active{% endif %}">
+    <i class="bi bi-headset"></i><span>Support Ticket</span>
+  </a>
+
+  <div class="adm-sidebar-bottom">
+    <a href="{{ url_for('auth.logout') }}" class="adm-nav-link" style="color:rgba(239,68,68,.7);">
+      <i class="bi bi-box-arrow-left"></i><span>Logout</span>
+    </a>
+  </div>
+</aside>
+
+<!-- Main -->
+<main class="adm-main">
+
+  <!-- Topbar -->
+  <div class="adm-topbar">
+    <div>
+      <div class="adm-page-title">{% block page_title %}{% endblock %}</div>
+      <div class="adm-page-sub">SecureVault Admin Panel</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:.75rem;">
+      <a href="{{ url_for('admin.dashboard') }}" class="btn adm-btn-secondary btn-sm" style="font-size:.75rem;">
+        <i class="bi bi-speedometer2 me-1"></i>Dashboard
+      </a>
+      <div class="adm-admin-profile">
+        <div class="adm-admin-avatar">{{ session.get('username','A')[0].upper() }}</div>
+        <div>
+          <div class="adm-admin-name">{{ session.get('username') }}</div>
+          <div class="adm-admin-role">Administrator</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div class="adm-alert-{{ 'success' if category=='success' else 'danger' if category=='danger' else 'warning' if category=='warning' else 'info' }} mb-3 d-flex align-items-center gap-2">
+      <i class="bi bi-{% if category=='success' %}check-circle-fill{% elif category=='danger' %}exclamation-circle-fill{% else %}info-circle-fill{% endif %}"></i>
+      {{ message }}
+    </div>
+    {% endfor %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+
+  <div style="color:rgba(255,255,255,.20);font-size:9px;text-align:center;padding:2rem 0 1rem;">
+    &copy; 2026 SecureVault File Storage System
+  </div>
+</main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script>
+// Confirm dialogs
+document.addEventListener('click', e => {
+  const btn = e.target.closest('[data-confirm]');
+  if (btn && !confirm(btn.dataset.confirm)) e.preventDefault();
+});
+// Mobile sidebar
+document.addEventListener('DOMContentLoaded', () => {
+  Chart.defaults.color = 'rgba(255,255,255,.45)';
+});
+</script>
+<script src="{{ url_for('static', filename='js/pwa.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

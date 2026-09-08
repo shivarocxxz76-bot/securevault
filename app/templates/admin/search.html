@@ -1,0 +1,89 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Global Search{% endblock %}
+{% block page_title %}Global Search{% endblock %}
+{% block content %}
+
+<div class="sv-card mb-4">
+  <form method="GET" action="{{ url_for('admin.search') }}" class="d-flex gap-2">
+    <div class="input-group input-group-lg">
+      <span class="input-group-text"><i class="bi bi-search"></i></span>
+      <input type="text" class="form-control" name="q" value="{{ q }}"
+             placeholder="Search users, files, tickets…" autofocus>
+    </div>
+    <button type="submit" class="btn btn-sv-primary px-4">Search</button>
+  </form>
+</div>
+
+{% if q %}
+
+<div class="row g-4">
+  <!-- Users -->
+  <div class="col-md-4">
+    <div class="sv-card">
+      <div class="section-title mb-3"><i class="bi bi-people-fill"></i> Users ({{ results.users|length }})</div>
+      {% if results.users %}
+      {% for u in results.users %}
+      <div class="d-flex align-items-center gap-2 py-2 {% if not loop.last %}border-bottom{% endif %}">
+        <div style="width:28px;height:28px;background:linear-gradient(135deg,var(--p600),var(--a500));border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.72rem;font-weight:700;flex-shrink:0;">{{ u.username[0].upper() }}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="fw-600" style="font-size:.825rem;">{{ u.username }}</div>
+          <div class="text-muted" style="font-size:.7rem;">{{ u.email }}</div>
+        </div>
+        <span style="width:8px;height:8px;border-radius:50%;background:{% if u.is_active %}var(--success){% else %}var(--danger){% endif %};flex-shrink:0;"></span>
+      </div>
+      {% endfor %}
+      {% else %}
+      <p class="text-muted mb-0" style="font-size:.825rem;">No users found.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Files -->
+  <div class="col-md-4">
+    <div class="sv-card">
+      <div class="section-title mb-3"><i class="bi bi-files"></i> Files ({{ results.files|length }})</div>
+      {% if results.files %}
+      {% for f in results.files %}
+      <div class="py-2 {% if not loop.last %}border-bottom{% endif %}">
+        <div class="d-flex align-items-center gap-1">
+          <i class="bi bi-file-earmark text-muted" style="flex-shrink:0;"></i>
+          <span class="fw-500" style="font-size:.825rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ f.original_name }}</span>
+        </div>
+        <div class="text-muted" style="font-size:.72rem;margin-top:.2rem;">{{ f.owner }} · {{ f.size_human }}</div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <p class="text-muted mb-0" style="font-size:.825rem;">No files found.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Tickets -->
+  <div class="col-md-4">
+    <div class="sv-card">
+      <div class="section-title mb-3"><i class="bi bi-ticket-perforated-fill"></i> Tickets ({{ results.tickets|length }})</div>
+      {% if results.tickets %}
+      {% for t in results.tickets %}
+      <div class="py-2 {% if not loop.last %}border-bottom{% endif %}">
+        <div class="fw-500" style="font-size:.825rem;">{{ t.subject }}</div>
+        <div class="d-flex align-items-center gap-2 mt-1">
+          <span class="pill pill-{{ t.status }}" style="font-size:.65rem;">{{ t.status | capitalize }}</span>
+          <a href="{{ url_for('admin.ticket_detail', ticket_id=t.id) }}" style="font-size:.72rem;">View →</a>
+        </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <p class="text-muted mb-0" style="font-size:.825rem;">No tickets found.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon"><i class="bi bi-search"></i></div>
+  <h5>Enter a search term</h5>
+  <p>Search across all users, files, and support tickets from one place.</p>
+</div>
+{% endif %}
+{% endblock %}

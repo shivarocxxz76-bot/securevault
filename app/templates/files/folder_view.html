@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+{% block title %}{{ folder.name }}{% endblock %}
+{% block page_title %}{{ folder.name }}{% endblock %}
+{% block content %}
+
+<nav class="sv-breadcrumb">
+  <a href="{{ url_for('files.dashboard') }}"><i class="bi bi-house-door-fill"></i></a>
+  {% for crumb in breadcrumb %}
+    <span class="sep"><i class="bi bi-chevron-right"></i></span>
+    {% if not loop.last %}
+      <a href="{{ url_for('files.files_in_folder', folder_id=crumb.id) }}">{{ crumb.name }}</a>
+    {% else %}
+      <span class="curr">{{ crumb.name }}</span>
+    {% endif %}
+  {% endfor %}
+</nav>
+
+<div class="row g-4">
+  <div class="col-lg-9">
+
+    <!-- Upload -->
+    <div class="sv-card mb-4">
+      <div class="section-header">
+        <div class="section-title"><i class="bi bi-cloud-arrow-up-fill"></i> Upload to "{{ folder.name }}"</div>
+        <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#newSubModal">
+          <i class="bi bi-folder-plus me-1"></i>Subfolder
+        </button>
+      </div>
+      <form method="POST" action="{{ url_for('files.upload') }}" enctype="multipart/form-data">
+        <input type="hidden" name="folder_id" value="{{ folder.id }}">
+        <div class="drop-zone" id="drop-zone">
+          <i class="bi bi-cloud-arrow-up dz-icon"></i>
+          <div class="dz-text" id="drop-label">Drag &amp; drop or click to browse</div>
+          <div class="dz-sub">Max 100 MB per file</div>
+        </div>
+        <input type="file" id="file-input" name="files" multiple class="d-none">
+        <button type="submit" class="btn btn-sv-primary mt-3 w-100">
+          <i class="bi bi-upload me-2"></i>Upload
+        </button>
+      </form>
+    </div>
+
+    <!-- Subfolders -->
+    {% if subfolders %}
+    <div class="sv-card mb-4">
+      <div class="section-title mb-3"><i class="bi bi-folder2-open"></i> Subfolders</div>
+      <div class="row g-2">
+        {% for sf in subfolders %}
+        <div class="col-md-6">
+          <div class="folder-card">
+            <i class="bi bi-folder-fill fc-folder-icon"></i>
+            <a href="{{ url_for('files.files_in_folder', folder_id=sf.id) }}"
+               class="fc-folder-name text-decoration-none">{{ sf.name }}</a>
+            <div class="fc-folder-actions">
+              <button class="btn btn-sm btn-light p-1 rename-trigger"
+                      data-target="rnf-{{ sf.id }}" title="Rename"><i class="bi bi-pencil"></i></button>
+              <form method="POST" action="{{ url_for('folders.delete_folder', folder_id=sf.id) }}" class="d-inline">
+                <button type="submit" class="btn btn-sm btn-light p-1" style="color:var(--danger);"
+                        data-confirm="Delete '{{ sf.name }}'?"><i class="bi bi-trash3"></i></button>
+              </form>
+            </div>
+          </div>
+          <form method="POST" action="{{ url_for('folders.rename_folder', folder_id=sf.id) }}"
+                class="d-none mt-1" id="rnf-{{ sf.id }}">
+            <div class="input-group input-group-sm">
+              <input type="text" class="form-control" name="new_name" value="{{ sf.name }}" required>
+              <button type="submit" class="btn btn-sv-primary">Save</button>
+            </div>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Files -->
+    <div class="sv-card">
+      <div class="section-title mb-3"><i class="bi bi-files"></i> Files ({{ files|length }})</div>
+      {% if files %}
+      <div class="table-responsive">
+        <table class="sv-table">
+          <thead><tr><th>Name</th><th>Size</th><th>Uploaded</th><th>Actions</th></tr></thead>
+          <tbody>
+            {% for file in files %}
+            <tr>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <i class="{{ file.icon }}" style="font-size:1.2rem;"></i>
+                  <div>
+                    <div style="font-weight:500;">{{ file.original_name }}</div>
+                    <form method="POST" action="{{ url_for('files.rename_file', file_id=file.id) }}"
+                          class="d-none mt-1" id="rnfl-{{ file.id }}">
+                      <div class="input-group input-group-sm">
+                        <input type="text" class="form-control" name="new_name"
+                               value="{{ file.original_name.rsplit('.',1)[0] }}" required>
+                        <button type="submit" class="btn btn-sv-primary">Save</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </td>
+              <td><span class="text-muted">{{ file.size_human }}</span></td>
+              <td><span class="text-muted">{{ file.created_at.strftime('%d %b %Y') }}</span></td>
+              <td>
+                <div class="d-flex gap-1">
+                  <a href="{{ url_for('files.download', file_id=file.id) }}"
+                     class="btn btn-sm btn-outline-primary" title="Download"><i class="bi bi-download"></i></a>
+                  <button class="btn btn-sm btn-outline-secondary rename-trigger"
+                          data-target="rnfl-{{ file.id }}" title="Rename"><i class="bi bi-pencil"></i></button>
+                  <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal"
+                          data-bs-target="#shareFileModal"
+                          data-file-id="{{ file.id }}" data-file-name="{{ file.original_name }}"
+                          title="Share"><i class="bi bi-share"></i></button>
+                  <form method="POST" action="{{ url_for('files.delete_file', file_id=file.id) }}" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                            data-confirm="Move to Recycle Bin?"><i class="bi bi-trash3"></i></button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <div class="empty-icon"><i class="bi bi-folder-x"></i></div>
+        <h5>Empty folder</h5>
+        <p>Upload files using the zone above.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Info panel -->
+  <div class="col-lg-3">
+    <div class="sv-card mb-3">
+      <div class="section-title mb-3"><i class="bi bi-info-circle-fill"></i> Folder Info</div>
+      <div class="mb-2" style="font-size:.825rem;"><span class="text-muted d-block" style="font-size:.72rem;">Name</span><strong>{{ folder.name }}</strong></div>
+      <div class="mb-2" style="font-size:.825rem;"><span class="text-muted d-block" style="font-size:.72rem;">Files</span><strong>{{ files|length }}</strong></div>
+      <div class="mb-2" style="font-size:.825rem;"><span class="text-muted d-block" style="font-size:.72rem;">Subfolders</span><strong>{{ subfolders|length }}</strong></div>
+      <div class="mb-3" style="font-size:.825rem;"><span class="text-muted d-block" style="font-size:.72rem;">Created</span><strong>{{ folder.created_at.strftime('%d %b %Y') }}</strong></div>
+      <div class="d-grid gap-2">
+        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal"
+                data-bs-target="#shareFolderModal"
+                data-folder-id="{{ folder.id }}" data-folder-name="{{ folder.name }}">
+          <i class="bi bi-share me-1"></i>Share Folder
+        </button>
+        <form method="POST" action="{{ url_for('folders.delete_folder', folder_id=folder.id) }}">
+          <button type="submit" class="btn btn-outline-danger btn-sm w-100"
+                  data-confirm="Move this folder to Recycle Bin?">
+            <i class="bi bi-trash3 me-1"></i>Delete Folder
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- New Subfolder Modal -->
+<div class="modal fade" id="newSubModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:var(--r-xl);border:none;">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-800"><i class="bi bi-folder-plus me-2" style="color:var(--warning);"></i>New Subfolder</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('folders.create_folder') }}">
+        <div class="modal-body py-3">
+          <input type="hidden" name="parent_id" value="{{ folder.id }}">
+          <input type="text" class="form-control" name="name" placeholder="Subfolder name" required autofocus>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-sv-primary">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Share File Modal -->
+<div class="modal fade" id="shareFileModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:var(--r-xl);border:none;">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-800"><i class="bi bi-share-fill me-2 text-primary"></i>Share File</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" id="share-file-form">
+        <div class="modal-body py-3">
+          <p class="text-muted mb-3" style="font-size:.825rem;">File: <strong id="share-file-name"></strong></p>
+          <input type="hidden" id="share-file-id">
+          <div class="mb-3"><label class="form-label">Share with (email)</label>
+            <input type="email" class="form-control" name="share_with_email" required></div>
+          <div><label class="form-label">Permission</label>
+            <select class="form-select" name="permission">
+              <option value="view">👁 View only</option>
+              <option value="download">⬇ View &amp; Download</option>
+            </select></div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-sv-primary">Share</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Share Folder Modal -->
+<div class="modal fade" id="shareFolderModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:var(--r-xl);border:none;">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-800"><i class="bi bi-share-fill me-2 text-primary"></i>Share Folder</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" id="share-folder-form">
+        <div class="modal-body py-3">
+          <p class="text-muted mb-3" style="font-size:.825rem;">Folder: <strong id="share-folder-name"></strong></p>
+          <input type="hidden" id="share-folder-id">
+          <div class="mb-3"><label class="form-label">Share with (email)</label>
+            <input type="email" class="form-control" name="share_with_email" required></div>
+          <div><label class="form-label">Permission</label>
+            <select class="form-select" name="permission">
+              <option value="view">👁 View only</option>
+              <option value="download">⬇ View &amp; Download</option>
+            </select></div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-sv-primary">Share</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+document.getElementById('share-file-form').addEventListener('submit',function(e){e.preventDefault();this.action='/file/share/'+document.getElementById('share-file-id').value;this.submit();});
+document.getElementById('share-folder-form').addEventListener('submit',function(e){e.preventDefault();this.action='/folder/share/'+document.getElementById('share-folder-id').value;this.submit();});
+</script>
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}{% if plan %}Edit Plan{% else %}Add Plan{% endif %}{% endblock %}
+{% block page_title %}{% if plan %}Edit Plan — {{ plan.name | capitalize }}{% else %}Add New Plan{% endif %}{% endblock %}
+{% block content %}
+
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="sv-card">
+      <div class="section-header mb-4">
+        <div class="section-title">
+          <i class="bi bi-credit-card-fill"></i>
+          {% if plan %}Edit "{{ plan.name | capitalize }}" Plan{% else %}Create New Plan{% endif %}
+        </div>
+      </div>
+
+      <form method="POST"
+            action="{{ url_for('admin.edit_plan', plan_id=plan.id) if plan else url_for('admin.add_plan') }}">
+
+        <div class="row g-3">
+
+          <!-- Plan name -->
+          <div class="col-12">
+            <label class="form-label">Plan Name <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-tag-fill"></i></span>
+              <input type="text" class="form-control" name="name" required
+                     placeholder="e.g. basic, pro, enterprise"
+                     value="{{ plan.name if plan else '' }}">
+            </div>
+            <div class="form-text">Used internally. Lowercase, no spaces.</div>
+          </div>
+
+          <!-- Price -->
+          <div class="col-md-6">
+            <label class="form-label">Price (USD/month) <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              <input type="number" class="form-control" name="price_usd"
+                     step="0.01" min="0" required
+                     placeholder="0.00"
+                     value="{{ '%.2f'|format(plan.price_usd) if plan else '0.00' }}">
+            </div>
+            <div class="form-text">Set to 0.00 for free plans.</div>
+          </div>
+
+          <!-- Storage -->
+          <div class="col-md-6">
+            <label class="form-label">Storage (GB) <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <input type="number" class="form-control" name="storage_gb"
+                     step="0.5" min="0.1" required
+                     placeholder="e.g. 10"
+                     value="{{ storage_gb }}">
+              <span class="input-group-text">GB</span>
+            </div>
+            <div class="form-text">e.g. 1, 10, 50, 200</div>
+          </div>
+
+          <!-- Description -->
+          <div class="col-12">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" name="description" rows="3"
+                      placeholder="Short plan description shown to users…">{{ plan.description if plan else '' }}</textarea>
+          </div>
+
+          <!-- Preview card -->
+          <div class="col-12">
+            <div style="background:var(--bg);border-radius:var(--r-md);padding:1rem;border:1.5px dashed var(--border);">
+              <div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.5rem;">Preview</div>
+              <div style="font-size:1rem;font-weight:800;" id="prev-name">{{ plan.name | capitalize if plan else 'Plan Name' }}</div>
+              <div style="font-size:1.6rem;font-weight:800;color:var(--p600);" id="prev-price">
+                ${{ '%.2f'|format(plan.price_usd) if plan else '0.00' }}<span style="font-size:.75rem;font-weight:400;color:var(--muted);">/mo</span>
+              </div>
+              <div style="font-size:.825rem;color:var(--muted);" id="prev-storage">{{ storage_gb }} GB storage</div>
+            </div>
+          </div>
+
+          <!-- Buttons -->
+          <div class="col-12 d-flex gap-2 mt-2">
+            <button type="submit" class="btn btn-sv-primary px-4">
+              <i class="bi bi-{% if plan %}check-circle-fill{% else %}plus-circle-fill{% endif %} me-2"></i>
+              {% if plan %}Save Changes{% else %}Create Plan{% endif %}
+            </button>
+            <a href="{{ url_for('admin.plans') }}" class="btn btn-light">Cancel</a>
+          </div>
+
+        </div>
+      </form>
+    </div>
+
+    {% if plan %}
+    <!-- Danger zone -->
+    <div class="sv-card mt-3" style="border-color:#fca5a5;">
+      <div class="section-title mb-3" style="color:var(--danger);"><i class="bi bi-exclamation-triangle-fill"></i> Danger Zone</div>
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="fw-600" style="font-size:.875rem;">Toggle plan visibility</div>
+          <div class="text-muted" style="font-size:.775rem;">
+            {% if plan.is_active %}This plan is currently active and visible to users.{% else %}This plan is hidden from users.{% endif %}
+          </div>
+        </div>
+        <form method="POST" action="{{ url_for('admin.toggle_plan', plan_id=plan.id) }}">
+          <button type="submit" class="btn btn-sm {% if plan.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}">
+            {% if plan.is_active %}<i class="bi bi-eye-slash me-1"></i>Deactivate{% else %}<i class="bi bi-eye me-1"></i>Activate{% endif %}
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+// Live preview update
+function updatePreview() {
+  const name    = document.querySelector('input[name="name"]').value || 'Plan Name';
+  const price   = parseFloat(document.querySelector('input[name="price_usd"]').value) || 0;
+  const storage = parseFloat(document.querySelector('input[name="storage_gb"]').value) || 0;
+  document.getElementById('prev-name').textContent    = name.charAt(0).toUpperCase() + name.slice(1);
+  document.getElementById('prev-price').innerHTML     = '$' + price.toFixed(2) + '<span style="font-size:.75rem;font-weight:400;color:var(--muted);">/mo</span>';
+  document.getElementById('prev-storage').textContent = storage + ' GB storage';
+}
+document.querySelectorAll('input[name="name"], input[name="price_usd"], input[name="storage_gb"]')
+  .forEach(el => el.addEventListener('input', updatePreview));
+</script>
+{% endblock %}

@@ -1,0 +1,94 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Ticket #{{ ticket.id }}{% endblock %}
+{% block page_title %}Ticket #{{ ticket.id }}{% endblock %}
+{% block content %}
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <!-- User message -->
+    <div class="sv-card mb-3">
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+          <h5 class="fw-800 mb-1">{{ ticket.subject }}</h5>
+          <div class="d-flex gap-2">
+            <span class="pill pill-{{ ticket.status }}">{{ ticket.status | replace('_',' ') | capitalize }}</span>
+            <span class="pill {% if ticket.priority == 'high' %}pill-failed{% elif ticket.priority == 'normal' %}pill-in_progress{% else %}pill-user{% endif %}">
+              {{ ticket.priority | capitalize }}
+            </span>
+          </div>
+        </div>
+        <span class="text-muted" style="font-size:.75rem;white-space:nowrap;">{{ ticket.created_at.strftime('%d %b %Y %H:%M') }}</span>
+      </div>
+
+      <!-- User info -->
+      <div class="d-flex align-items-center gap-2 mb-3 p-2" style="background:var(--bg);border-radius:var(--r-md);">
+        <div style="width:32px;height:32px;background:linear-gradient(135deg,var(--p600),var(--a500));border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.8rem;">{{ ticket.username[0].upper() }}</div>
+        <div>
+          <div class="fw-600" style="font-size:.875rem;">{{ ticket.username }}</div>
+          <div class="text-muted" style="font-size:.72rem;">{{ ticket.email }}</div>
+        </div>
+      </div>
+
+      <div class="ticket-message">{{ ticket.message }}</div>
+    </div>
+
+    <!-- Reply form -->
+    <div class="sv-card">
+      <div class="section-title mb-3"><i class="bi bi-reply-fill"></i> Admin Reply</div>
+      <form method="POST" action="{{ url_for('admin.ticket_detail', ticket_id=ticket.id) }}">
+        <div class="mb-3">
+          <label class="form-label">Reply Message</label>
+          <textarea class="form-control" name="reply" rows="5"
+                    placeholder="Type your response…">{{ ticket.admin_reply or '' }}</textarea>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Update Status</label>
+          <select class="form-select" name="status">
+            <option value="open"        {% if ticket.status == 'open'        %}selected{% endif %}>🔵 Open</option>
+            <option value="in_progress" {% if ticket.status == 'in_progress' %}selected{% endif %}>🟡 In Progress</option>
+            <option value="closed"      {% if ticket.status == 'closed'      %}selected{% endif %}>✅ Closed</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-sv-primary">
+          <i class="bi bi-send-fill me-2"></i>Send Reply &amp; Update Status
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="sv-card">
+      <div class="section-title mb-3"><i class="bi bi-info-circle-fill"></i> Ticket Info</div>
+      <div style="font-size:.825rem;">
+        <div class="py-2" style="border-bottom:1px solid var(--border);">
+          <span class="text-muted d-block" style="font-size:.7rem;">Ticket ID</span><code>#{{ ticket.id }}</code>
+        </div>
+        <div class="py-2" style="border-bottom:1px solid var(--border);">
+          <span class="text-muted d-block" style="font-size:.7rem;">User</span><strong>{{ ticket.username }}</strong>
+        </div>
+        <div class="py-2" style="border-bottom:1px solid var(--border);">
+          <span class="text-muted d-block" style="font-size:.7rem;">Email</span>{{ ticket.email }}
+        </div>
+        <div class="py-2" style="border-bottom:1px solid var(--border);">
+          <span class="text-muted d-block" style="font-size:.7rem;">Status</span>
+          <span class="pill pill-{{ ticket.status }}">{{ ticket.status | replace('_',' ') | capitalize }}</span>
+        </div>
+        <div class="py-2" style="border-bottom:1px solid var(--border);">
+          <span class="text-muted d-block" style="font-size:.7rem;">Priority</span><strong>{{ ticket.priority | capitalize }}</strong>
+        </div>
+        <div class="py-2">
+          <span class="text-muted d-block" style="font-size:.7rem;">Submitted</span>{{ ticket.created_at.strftime('%d %b %Y %H:%M') }}
+        </div>
+        {% if ticket.replied_at %}
+        <div class="py-2" style="border-top:1px solid var(--border);">
+          <span class="text-muted d-block" style="font-size:.7rem;">Last Reply</span>{{ ticket.replied_at.strftime('%d %b %Y %H:%M') }}
+        </div>
+        {% endif %}
+      </div>
+      <a href="{{ url_for('admin.tickets') }}" class="btn btn-light btn-sm w-100 mt-3">
+        <i class="bi bi-arrow-left me-1"></i>Back to Tickets
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}User Management{% endblock %}
+{% block page_title %}User Management{% endblock %}
+{% block content %}
+
+<!-- Search -->
+<div style="display:flex;gap:.6rem;margin-bottom:1.5rem;">
+  <form method="GET" action="{{ url_for('admin.users') }}" style="display:flex;gap:.5rem;flex:1;">
+    <div class="input-group">
+      <span class="adm-input-group-text input-group-text"><i class="bi bi-search" style="color:#5eead4;"></i></span>
+      <input type="text" class="form-control adm-search-input" name="q" value="{{ search }}" placeholder="Search username or email…">
+    </div>
+    <button type="submit" class="btn adm-btn-primary px-4">Search</button>
+    {% if search %}<a href="{{ url_for('admin.users') }}" class="btn adm-btn-secondary">Clear</a>{% endif %}
+  </form>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+  {% for label, val, color in [('Total Users', all_users|length, '#5eead4'), ('Active', all_users|selectattr("is_active")|list|length, '#4ade80'), ('Inactive', all_users|rejectattr("is_active")|list|length, '#f87171'), ('Admins', all_users|selectattr("role","equalto","admin")|list|length, '#c084fc')] %}
+  <div class="col-6 col-md-3">
+    <div class="adm-stat-card" style="min-height:80px;padding:1.1rem;">
+      <div style="font-size:1.6rem;font-weight:800;color:{{ color }};line-height:1;">{{ val }}</div>
+      <div style="font-size:.72rem;color:rgba(255,255,255,.35);margin-top:.2rem;">{{ label }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Table -->
+<div style="background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);border-radius:17px;overflow:hidden;">
+  <div class="adm-section-header">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <h4><i class="bi bi-people-fill" style="color:#5eead4;"></i>
+        All Users {% if search %}<small class="adm-muted" style="font-weight:400;"> — "{{ search }}"</small>{% endif %}
+      </h4>
+      <span class="adm-muted" style="font-size:10px;">{{ all_users|length }} result(s)</span>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="adm-table">
+      <thead>
+        <tr><th>User</th><th>Role</th><th>Plan</th><th>Storage</th><th>Status</th><th>Joined</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for u in all_users %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:.6rem;">
+              <span class="adm-avatar" style="margin-right:0;">{{ u.username[0].upper() }}</span>
+              <div>
+                <strong>{{ u.username }}</strong><br>
+                <small class="adm-muted">{{ u.email }}</small>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span style="background:{% if u.role=='admin' %}rgba(45,212,191,.12){% else %}rgba(255,255,255,.06){% endif %};color:{% if u.role=='admin' %}#5eead4{% else %}rgba(255,255,255,.55){% endif %};padding:4px 10px;border-radius:99px;font-size:9px;font-weight:700;">{{ u.role | capitalize }}</span>
+          </td>
+          <td>
+            <span style="color:rgba(255,255,255,.55);font-size:11px;">{{ u.current_plan | capitalize }}</span>
+          </td>
+          <td style="min-width:140px;">
+            <div style="font-size:10px;color:rgba(255,255,255,.45);margin-bottom:.3rem;">{{ u.used_human }} / {{ u.limit_human }}</div>
+            <div class="adm-progress">
+              <div class="adm-progress-fill {% if u.used_pct >= 90 %}adm-progress-danger{% elif u.used_pct >= 70 %}adm-progress-warn{% else %}adm-progress-safe{% endif %}"
+                   style="width:{{ u.used_pct }}%"></div>
+            </div>
+          </td>
+          <td>
+            {% if u.is_active %}<span class="adm-status adm-status-active"><i class="bi bi-check-circle-fill"></i> Active</span>
+            {% else %}<span class="adm-status adm-status-inactive"><i class="bi bi-x-circle-fill"></i> Inactive</span>{% endif %}
+          </td>
+          <td><small class="adm-muted">{{ u.created_at.strftime('%d %b %Y') }}</small></td>
+          <td>
+            <div style="display:flex;gap:.3rem;flex-wrap:wrap;">
+              <form method="POST" action="{{ url_for('admin.toggle_user', user_id=u.id) }}">
+                <button type="submit" class="btn btn-sm {% if u.is_active %}adm-btn-warning{% else %}adm-btn-success{% endif %}"
+                        data-confirm="{% if u.is_active %}Deactivate{% else %}Activate{% endif %} {{ u.username }}?"
+                        title="{% if u.is_active %}Deactivate{% else %}Activate{% endif %}">
+                  <i class="bi bi-{% if u.is_active %}person-dash{% else %}person-check{% endif %}"></i>
+                </button>
+              </form>
+              <form method="POST" action="{{ url_for('admin.change_role', user_id=u.id) }}" style="display:flex;gap:.2rem;">
+                <select name="role" class="form-select form-select-sm adm-form-select" style="width:80px;font-size:10px;padding:.2rem .5rem;">
+                  <option value="user" {% if u.role=='user' %}selected{% endif %}>User</option>
+                  <option value="admin" {% if u.role=='admin' %}selected{% endif %}>Admin</option>
+                </select>
+                <button type="submit" class="btn btn-sm adm-btn-primary" data-confirm="Change role for {{ u.username }}?">
+                  <i class="bi bi-check2"></i>
+                </button>
+              </form>
+              {% if u.id != admin_user.id %}
+              <form method="POST" action="{{ url_for('admin.delete_user', user_id=u.id) }}">
+                <button type="submit" class="btn btn-sm adm-btn-danger" data-confirm="Permanently delete {{ u.username }}?">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,166 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Security Monitoring{% endblock %}
+{% block page_title %}Security Monitoring{% endblock %}
+{% block content %}
+
+<!-- Security stat cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="sv-card text-center py-3">
+      <div style="font-size:2rem;font-weight:800;color:#00d4d4;">{{ stats.active_sessions }}</div>
+      <div style="font-size:.75rem;color:#6e7681;margin-top:.2rem;">Active Sessions</div>
+      <div style="margin-top:.5rem;"><i class="bi bi-circle-fill" style="color:#3fb950;font-size:.5rem;"></i> <span style="font-size:.7rem;color:#3fb950;">Live</span></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="sv-card text-center py-3">
+      <div style="font-size:2rem;font-weight:800;color:#f85149;">{{ stats.locked_accounts }}</div>
+      <div style="font-size:.75rem;color:#6e7681;margin-top:.2rem;">Locked Accounts</div>
+      <div style="margin-top:.5rem;"><i class="bi bi-lock-fill" style="color:#f85149;font-size:.75rem;"></i></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="sv-card text-center py-3">
+      <div style="font-size:2rem;font-weight:800;color:#d29922;">{{ stats.suspicious_users }}</div>
+      <div style="font-size:.75rem;color:#6e7681;margin-top:.2rem;">Suspicious Users</div>
+      <div style="margin-top:.5rem;"><i class="bi bi-exclamation-triangle-fill" style="color:#d29922;font-size:.75rem;"></i></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="sv-card text-center py-3">
+      <div style="font-size:2rem;font-weight:800;color:#818cf8;">{{ stats.failed_24h }}</div>
+      <div style="font-size:.75rem;color:#6e7681;margin-top:.2rem;">Failed Logins (24h)</div>
+      <div style="margin-top:.5rem;"><i class="bi bi-shield-x" style="color:#818cf8;font-size:.75rem;"></i></div>
+    </div>
+  </div>
+</div>
+
+<!-- Security rules info -->
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <div class="sv-card">
+      <div style="font-size:.875rem;font-weight:700;color:#e6edf3;display:flex;align-items:center;gap:.4rem;margin-bottom:1rem;">
+        <i class="bi bi-shield-fill-check" style="color:#00d4d4;"></i> Security Policies Active
+      </div>
+      <div class="row g-3">
+        {% set policies = [
+          ('bi-lock-fill', '#3fb950', 'Password Hashing', 'bcrypt with cost factor 12 — all passwords securely hashed'),
+          ('bi-person-dash-fill', '#f85149', 'Brute-Force Protection', 'Account locks after 5 failed login attempts for 15 minutes'),
+          ('bi-journal-check', '#00d4d4', 'Activity Logging', 'Every user action logged with IP address and timestamp'),
+          ('bi-shield-shaded', '#818cf8', 'SQL Injection Prevention', 'All queries use parameterised placeholders — no string interpolation'),
+          ('bi-file-lock-fill', '#d29922', 'File Access Control', 'Ownership check on every download — shared-with verification'),
+          ('bi-key-fill', '#3fb950', 'Session Security', 'HttpOnly + SameSite=Lax cookies, server-side session storage'),
+        ] %}
+        {% for icon, color, title, desc in policies %}
+        <div class="col-md-6 col-lg-4">
+          <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:.9rem 1rem;display:flex;gap:.75rem;align-items:flex-start;">
+            <div style="width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="bi {{ icon }}" style="color:{{ color }};font-size:.95rem;"></i>
+            </div>
+            <div>
+              <div style="font-size:.825rem;font-weight:600;color:#e6edf3;">{{ title }}</div>
+              <div style="font-size:.72rem;color:#6e7681;margin-top:.2rem;line-height:1.5;">{{ desc }}</div>
+            </div>
+            <i class="bi bi-check-circle-fill ms-auto" style="color:#3fb950;flex-shrink:0;font-size:.85rem;"></i>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Suspicious users -->
+{% if suspicious %}
+<div class="sv-card mb-4" style="padding:0;overflow:hidden;">
+  <div style="padding:.9rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:space-between;">
+    <div style="font-size:.875rem;font-weight:700;color:#e6edf3;display:flex;align-items:center;gap:.4rem;">
+      <i class="bi bi-exclamation-triangle-fill" style="color:#d29922;"></i> Suspicious Accounts
+    </div>
+    <span style="font-size:.72rem;color:#6e7681;">{{ suspicious|length }} account(s)</span>
+  </div>
+  <div class="table-responsive">
+    <table class="sv-table" style="margin:0;">
+      <thead>
+        <tr><th>User</th><th>Failed Attempts</th><th>Locked Until</th><th>Last Login</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        {% for u in suspicious %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div style="width:30px;height:30px;background:rgba(248,81,73,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#f85149;font-weight:700;font-size:.78rem;flex-shrink:0;">{{ u.username[0].upper() }}</div>
+              <div>
+                <div style="font-weight:600;color:#e6edf3;font-size:.825rem;">{{ u.username }}</div>
+                <div style="font-size:.7rem;color:#6e7681;">{{ u.email }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span style="font-size:.875rem;font-weight:700;color:{% if u.failed_login_attempts >= 5 %}#f85149{% elif u.failed_login_attempts >= 3 %}#d29922{% else %}#c9d1d9{% endif %};">
+              {{ u.failed_login_attempts }}
+            </span>
+          </td>
+          <td style="font-size:.8rem;color:{% if u.locked_until %}#f85149{% else %}#6e7681{% endif %};">
+            {% if u.locked_until %}
+              <i class="bi bi-lock-fill me-1"></i>{{ u.locked_until.strftime('%d %b %Y %H:%M') }}
+            {% else %}
+              <span style="color:#6e7681;">—</span>
+            {% endif %}
+          </td>
+          <td style="font-size:.8rem;color:#6e7681;">
+            {{ u.last_login.strftime('%d %b %Y %H:%M') if u.last_login else '—' }}
+          </td>
+          <td>
+            <span class="pill {% if u.is_active %}pill-active{% else %}pill-inactive{% endif %}">
+              {% if u.is_active %}Active{% else %}Inactive{% endif %}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Auth activity log -->
+<div class="sv-card" style="padding:0;overflow:hidden;">
+  <div style="padding:.9rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.07);">
+    <div style="font-size:.875rem;font-weight:700;color:#e6edf3;display:flex;align-items:center;gap:.4rem;">
+      <i class="bi bi-shield-lock-fill" style="color:#00d4d4;"></i> Authentication Events
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="sv-table" style="margin:0;">
+      <thead>
+        <tr><th>User</th><th>Event</th><th>IP Address</th><th>Time</th></tr>
+      </thead>
+      <tbody>
+        {% for log in login_logs %}
+        <tr>
+          <td>
+            <div style="font-size:.825rem;font-weight:500;color:#c9d1d9;">{{ log.username or 'unknown' }}</div>
+          </td>
+          <td>
+            <code style="font-size:.72rem;padding:.15rem .5rem;border-radius:4px;font-weight:700;
+              {% if log.action == 'login' %}background:rgba(63,185,80,.1);color:#3fb950;
+              {% elif log.action == 'logout' %}background:rgba(139,148,158,.1);color:#8b949e;
+              {% elif log.action == 'register' %}background:rgba(0,212,212,.1);color:#00d4d4;
+              {% else %}background:rgba(79,70,229,.1);color:#818cf8;{% endif %}">
+              {{ log.action }}
+            </code>
+          </td>
+          <td style="font-size:.775rem;color:#6e7681;font-family:monospace;">{{ log.ip_address or '—' }}</td>
+          <td style="font-size:.72rem;color:#6e7681;white-space:nowrap;">{{ log.created_at.strftime('%d %b %Y %H:%M:%S') }}</td>
+        </tr>
+        {% endfor %}
+        {% if not login_logs %}
+        <tr><td colspan="4" style="text-align:center;color:#6e7681;padding:2rem;">No authentication events recorded yet.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

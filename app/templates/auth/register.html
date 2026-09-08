@@ -1,0 +1,97 @@
+{% extends 'base_auth.html' %}
+{% block title %}Create Account — SecureVault{% endblock %}
+
+{% block content %}
+<div class="auth-title">Create account</div>
+<div class="auth-subtitle">Join Secure File Storage today.</div>
+
+<form method="POST" action="{{ url_for('auth.register') }}" novalidate>
+
+  <!-- Username -->
+  <label class="af-label" for="username">Username</label>
+  <div class="af-input-wrap">
+    <i class="bi bi-person af-input-icon"></i>
+    <input type="text" id="username" name="username" class="af-input af-input-right"
+           placeholder="Enter your username" required minlength="3" autocomplete="username">
+  </div>
+
+  <!-- Full name / email -->
+  <label class="af-label" for="email">Email address</label>
+  <div class="af-input-wrap">
+    <i class="bi bi-envelope af-input-icon"></i>
+    <input type="email" id="email" name="email" class="af-input"
+           placeholder="you@example.com" required autocomplete="email">
+  </div>
+
+  <!-- Password -->
+  <label class="af-label" for="password">Create password</label>
+  <div class="af-input-wrap">
+    <i class="bi bi-lock af-input-icon"></i>
+    <input type="password" id="password" name="password" class="af-input af-input-right"
+           placeholder="Create a secure password" required minlength="8" autocomplete="new-password">
+    <button type="button" class="af-eye-btn" id="eye-btn" tabindex="-1">
+      <i class="bi bi-eye" id="eye-icon"></i>
+    </button>
+  </div>
+  <!-- Strength bar -->
+  <div class="strength-track"><div class="strength-fill" id="s-fill" style="width:0;"></div></div>
+  <div class="strength-label" id="s-label" style="color:#4a5568;"></div>
+
+  <!-- Confirm password -->
+  <label class="af-label" for="confirm_password" style="margin-top:.9rem;">Confirm password</label>
+  <div class="af-input-wrap">
+    <i class="bi bi-shield-lock af-input-icon"></i>
+    <input type="password" id="confirm_password" name="confirm_password" class="af-input"
+           placeholder="Repeat your password" required autocomplete="new-password">
+  </div>
+  <div class="af-hint">Use at least 8 characters for better security.</div>
+
+  <button type="submit" class="af-btn af-btn-primary" style="margin-top:1.25rem;">
+    Create my account <i class="bi bi-arrow-right"></i>
+  </button>
+</form>
+
+<div class="af-divider">ACCOUNT</div>
+<div class="af-link-row">
+  Already have an account? <a href="{{ url_for('auth.login') }}" class="af-link">Sign in</a>
+</div>
+
+<div class="af-security-note">
+  <i class="bi bi-shield-check-fill"></i>
+  Protected service from Secure File Storage
+</div>
+
+<script>
+// Password strength meter
+document.getElementById('password').addEventListener('input', function() {
+  const v = this.value;
+  let s = 0;
+  if (v.length >= 8)            s++;
+  if (v.length >= 12)           s++;
+  if (/[A-Z]/.test(v))          s++;
+  if (/[0-9]/.test(v))          s++;
+  if (/[^A-Za-z0-9]/.test(v))   s++;
+  const map = [
+    null,
+    { w:'20%', c:'#ef4444', t:'Weak' },
+    { w:'40%', c:'#f97316', t:'Fair' },
+    { w:'60%', c:'#eab308', t:'Good' },
+    { w:'80%', c:'#22c55e', t:'Strong' },
+    { w:'100%',c:'#00d4d4', t:'Very strong' },
+  ];
+  const r = map[Math.min(s, 5)];
+  const fill  = document.getElementById('s-fill');
+  const label = document.getElementById('s-label');
+  if (r) { fill.style.width = r.w; fill.style.background = r.c; label.textContent = r.t; label.style.color = r.c; }
+  else   { fill.style.width='0'; label.textContent=''; }
+});
+
+// Eye toggle
+document.getElementById('eye-btn').addEventListener('click', function() {
+  const pw  = document.getElementById('password');
+  const ico = document.getElementById('eye-icon');
+  if (pw.type === 'password') { pw.type = 'text';     ico.className = 'bi bi-eye-slash'; }
+  else                         { pw.type = 'password'; ico.className = 'bi bi-eye'; }
+});
+</script>
+{% endblock %}

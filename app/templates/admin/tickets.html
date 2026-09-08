@@ -1,0 +1,61 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Support Tickets{% endblock %}
+{% block page_title %}Support Tickets{% endblock %}
+{% block content %}
+
+<div class="d-flex gap-2 mb-4 flex-wrap">
+  <a href="{{ url_for('admin.tickets') }}"
+     class="btn btn-sm {% if not status_filter %}btn-sv-primary{% else %}btn-outline-secondary{% endif %}">All</a>
+  <a href="{{ url_for('admin.tickets') }}?status=open"
+     class="btn btn-sm {% if status_filter == 'open' %}btn-sv-primary{% else %}btn-outline-secondary{% endif %}">Open</a>
+  <a href="{{ url_for('admin.tickets') }}?status=in_progress"
+     class="btn btn-sm {% if status_filter == 'in_progress' %}btn-sv-primary{% else %}btn-outline-secondary{% endif %}">In Progress</a>
+  <a href="{{ url_for('admin.tickets') }}?status=closed"
+     class="btn btn-sm {% if status_filter == 'closed' %}btn-sv-primary{% else %}btn-outline-secondary{% endif %}">Closed</a>
+</div>
+
+<div class="sv-card">
+  <div class="section-header mb-3">
+    <div class="section-title"><i class="bi bi-ticket-perforated-fill"></i> Tickets ({{ tickets|length }})</div>
+  </div>
+  {% if tickets %}
+  <div class="table-responsive">
+    <table class="sv-table">
+      <thead><tr><th>#</th><th>User</th><th>Subject</th><th>Priority</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for t in tickets %}
+        <tr>
+          <td class="text-muted" style="font-size:.8rem;">#{{ t.id }}</td>
+          <td>
+            <div class="d-flex align-items-center gap-1">
+              <div style="width:24px;height:24px;background:var(--p100);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--p700);font-size:.68rem;font-weight:700;">{{ t.username[0].upper() }}</div>
+              {{ t.username }}
+            </div>
+          </td>
+          <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;">{{ t.subject }}</td>
+          <td>
+            <span class="pill {% if t.priority == 'high' %}pill-failed{% elif t.priority == 'normal' %}pill-in_progress{% else %}pill-user{% endif %}">
+              {{ t.priority | capitalize }}
+            </span>
+          </td>
+          <td><span class="pill pill-{{ t.status }}">{{ t.status | replace('_',' ') | capitalize }}</span></td>
+          <td class="text-muted" style="font-size:.8rem;">{{ t.created_at.strftime('%d %b %Y') }}</td>
+          <td>
+            <a href="{{ url_for('admin.ticket_detail', ticket_id=t.id) }}"
+               class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-reply me-1"></i>Reply
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon"><i class="bi bi-ticket-perforated"></i></div>
+    <h5>No tickets found</h5>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

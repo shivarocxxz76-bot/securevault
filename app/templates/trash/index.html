@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}Recycle Bin{% endblock %}
+{% block page_title %}Recycle Bin{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="text-muted" style="font-size:.875rem;">
+    <i class="bi bi-trash3 me-1"></i>
+    {{ (deleted_files|length) + (deleted_folders|length) }} item(s) in bin
+  </div>
+  {% if deleted_files or deleted_folders %}
+  <form method="POST" action="{{ url_for('trash.empty_trash') }}">
+    <button type="submit" class="btn btn-danger btn-sm"
+            data-confirm="Permanently delete ALL items? This CANNOT be undone.">
+      <i class="bi bi-trash3-fill me-1"></i>Empty Bin
+    </button>
+  </form>
+  {% endif %}
+</div>
+
+{% if deleted_folders %}
+<div class="sv-card mb-4">
+  <div class="section-title mb-3"><i class="bi bi-folder-x" style="color:var(--warning);"></i> Deleted Folders</div>
+  <div class="table-responsive">
+    <table class="sv-table">
+      <thead><tr><th>Name</th><th>Deleted</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for folder in deleted_folders %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-folder-fill" style="font-size:1.1rem;color:var(--warning);"></i>
+              <span class="fw-600">{{ folder.name }}</span>
+            </div>
+          </td>
+          <td class="text-muted">{{ folder.deleted_at.strftime('%d %b %Y %H:%M') if folder.deleted_at else '—' }}</td>
+          <td>
+            <div class="d-flex gap-2">
+              <form method="POST" action="{{ url_for('trash.restore_folder', folder_id=folder.id) }}">
+                <button type="submit" class="btn btn-sm btn-outline-success">
+                  <i class="bi bi-arrow-counterclockwise me-1"></i>Restore
+                </button>
+              </form>
+              <form method="POST" action="{{ url_for('trash.perm_delete_folder', folder_id=folder.id) }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger"
+                        data-confirm="Permanently delete '{{ folder.name }}' and all contents?">
+                  <i class="bi bi-trash3 me-1"></i>Delete Forever
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<div class="sv-card">
+  <div class="section-title mb-3"><i class="bi bi-file-earmark-x" style="color:var(--danger);"></i> Deleted Files</div>
+  {% if deleted_files %}
+  <div class="table-responsive">
+    <table class="sv-table">
+      <thead><tr><th>File</th><th>Size</th><th>Deleted</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for file in deleted_files %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <i class="{{ file.icon }}" style="font-size:1.2rem;"></i>
+              <span class="fw-500">{{ file.original_name }}</span>
+            </div>
+          </td>
+          <td class="text-muted">{{ file.size_human }}</td>
+          <td class="text-muted">{{ file.deleted_at.strftime('%d %b %Y %H:%M') if file.deleted_at else '—' }}</td>
+          <td>
+            <div class="d-flex gap-2">
+              <form method="POST" action="{{ url_for('trash.restore_file', file_id=file.id) }}">
+                <button type="submit" class="btn btn-sm btn-outline-success">
+                  <i class="bi bi-arrow-counterclockwise me-1"></i>Restore
+                </button>
+              </form>
+              <form method="POST" action="{{ url_for('trash.perm_delete_file', file_id=file.id) }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger"
+                        data-confirm="Permanently delete '{{ file.original_name }}'?">
+                  <i class="bi bi-trash3 me-1"></i>Forever
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon"><i class="bi bi-trash3"></i></div>
+    <h5>Recycle Bin is empty</h5>
+    <p>Deleted files and folders appear here before permanent removal.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

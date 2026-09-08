@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Checkout{% endblock %}
+{% block page_title %}Checkout{% endblock %}
+{% block content %}
+
+<div class="checkout-wrap">
+  <!-- Order summary -->
+  <div class="sv-card mb-4">
+    <div class="section-title mb-3"><i class="bi bi-bag-check-fill"></i> Order Summary</div>
+    <div class="d-flex align-items-center gap-3 p-3 mb-3"
+         style="background:var(--bg);border-radius:var(--r-md);">
+      <div style="width:48px;height:48px;background:linear-gradient(135deg,var(--p600),var(--a500));border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.3rem;">
+        <i class="bi bi-hdd-fill"></i>
+      </div>
+      <div>
+        <div class="fw-700">{{ plan.name | capitalize }} Plan</div>
+        <div class="text-muted" style="font-size:.8rem;">{{ (plan.storage_bytes / 1073741824)|int }} GB cloud storage</div>
+      </div>
+      <div class="ms-auto fw-800" style="font-size:1.2rem;color:var(--p600);">${{ "%.2f"|format(plan.price_usd) }}<span style="font-size:.7rem;font-weight:400;color:var(--muted);">/mo</span></div>
+    </div>
+    <div class="d-flex justify-content-between py-2" style="border-top:1px solid var(--border);font-size:.875rem;">
+      <span class="text-muted">Subtotal</span><span>${{ "%.2f"|format(plan.price_usd) }}</span>
+    </div>
+    <div class="d-flex justify-content-between py-2 fw-800" style="font-size:1rem;border-top:1px solid var(--border);">
+      <span>Total Due</span><span class="text-gradient">${{ "%.2f"|format(plan.price_usd) }}</span>
+    </div>
+  </div>
+
+  <!-- Payment form -->
+  <div class="sv-card">
+    <div class="section-title mb-1"><i class="bi bi-credit-card-fill"></i> Payment Details</div>
+    <div class="alert alert-info mb-4" style="font-size:.8rem;">
+      <i class="bi bi-info-circle-fill"></i>
+      <strong>Demo Mode:</strong> This is a simulated payment. Use any test card numbers — no real charge will occur.
+    </div>
+
+    <form method="POST" action="{{ url_for('storage.checkout', plan_id=plan.id) }}">
+      <div class="mb-3">
+        <label class="form-label">Cardholder Name</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+          <input type="text" class="form-control" name="card_name" required
+                 value="{{ user.username }}" placeholder="Full name on card">
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Card Number</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-credit-card"></i></span>
+          <input type="text" class="form-control cc-input" id="card-number-input"
+                 name="card_number" placeholder="1234  5678  9012  3456" maxlength="19" required>
+          <span class="input-group-text" style="gap:.25rem;">
+            <i class="bi bi-credit-card-2-front text-muted"></i>
+          </span>
+        </div>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:.3rem;">Test: use 4242 4242 4242 4242</div>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-6">
+          <label class="form-label">Expiry</label>
+          <input type="text" class="form-control" name="expiry" placeholder="MM / YY" maxlength="7" required>
+        </div>
+        <div class="col-6">
+          <label class="form-label">CVV</label>
+          <div class="input-group">
+            <input type="text" class="form-control" name="cvv" placeholder="123" maxlength="3" required>
+            <span class="input-group-text"><i class="bi bi-shield-lock text-muted"></i></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-sv-primary py-2" style="font-size:.95rem;">
+          <i class="bi bi-lock-fill me-2"></i>Complete Payment — ${{ "%.2f"|format(plan.price_usd) }}
+        </button>
+        <a href="{{ url_for('storage.overview') }}" class="btn btn-light">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

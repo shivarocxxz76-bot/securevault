@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Storage & Plans{% endblock %}
+{% block page_title %}Storage &amp; Plans{% endblock %}
+{% block content %}
+
+<!-- Usage banner -->
+<div class="sv-card mb-4" style="background:linear-gradient(135deg,var(--p800),var(--p600));border:none;color:#fff;">
+  <div class="row align-items-center g-3">
+    <div class="col-md-8">
+      <div style="font-size:.75rem;opacity:.7;text-transform:uppercase;letter-spacing:.07em;font-weight:600;">Storage Usage</div>
+      <div class="d-flex align-items-end gap-3 mt-1 mb-2">
+        <div style="font-size:2rem;font-weight:800;line-height:1;">{{ used_human }}</div>
+        <div style="font-size:.9rem;opacity:.7;padding-bottom:.2rem;">of {{ limit_human }}</div>
+      </div>
+      <div style="height:8px;background:rgba(255,255,255,.2);border-radius:99px;overflow:hidden;">
+        <div style="width:{{ used_pct }}%;height:100%;background:linear-gradient(90deg,#818cf8,var(--a400));border-radius:99px;transition:width .5s;"></div>
+      </div>
+      <div style="font-size:.72rem;opacity:.6;margin-top:.4rem;">{{ used_pct }}% used · {{ 100 - used_pct }}% free</div>
+    </div>
+    <div class="col-md-4 text-md-end">
+      <div style="font-size:.75rem;opacity:.7;">Current Plan</div>
+      <div style="font-size:1.8rem;font-weight:800;">{{ user.current_plan | capitalize }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Plans grid -->
+<h6 class="fw-800 mb-3" style="font-size:.9rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">Available Plans</h6>
+<div class="row g-3 mb-4">
+  {% for plan in plans %}
+  <div class="col-sm-6 col-xl-3">
+    <div class="plan-card {% if user.current_plan == plan.name %}featured{% endif %} {% if plan.name == 'pro' %}featured{% endif %}">
+      {% if plan.name == 'pro' %}<div class="plan-badge">✨ Most Popular</div>{% endif %}
+      {% if user.current_plan == plan.name and plan.name != 'pro' %}<div class="plan-badge" style="background:var(--success);">✓ Current</div>{% endif %}
+      <div class="plan-name mt-2">{{ plan.name | capitalize }}</div>
+      <div class="plan-price my-2">
+        {% if plan.price_usd == 0 %}<sup>$</sup>0<span class="per">/mo</span>
+        {% else %}<sup>$</sup>{{ "%.2f"|format(plan.price_usd) }}<span class="per">/mo</span>{% endif %}
+      </div>
+      <div class="plan-storage">{{ (plan.storage_bytes / 1073741824)|int }} GB storage</div>
+      <div class="text-muted mb-3" style="font-size:.775rem;">{{ plan.description }}</div>
+      {% if user.current_plan == plan.name %}
+        <button class="btn btn-light w-100" disabled>Active Plan</button>
+      {% elif plan.price_usd == 0 %}
+        <button class="btn btn-light w-100" disabled>Free Tier</button>
+      {% else %}
+        <a href="{{ url_for('storage.checkout', plan_id=plan.id) }}"
+           class="btn btn-sv-primary w-100">Upgrade Now</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Payment history -->
+<div class="sv-card">
+  <div class="section-header">
+    <div class="section-title"><i class="bi bi-receipt"></i> Payment History</div>
+    <span class="text-muted" style="font-size:.75rem;">{{ payments|length }} transaction(s)</span>
+  </div>
+  {% if payments %}
+  <div class="table-responsive">
+    <table class="sv-table">
+      <thead><tr><th>Plan</th><th>Amount</th><th>Status</th><th>Reference</th><th>Date</th></tr></thead>
+      <tbody>
+        {% for p in payments %}
+        <tr>
+          <td><span class="fw-600">{{ p.plan_name | capitalize }}</span></td>
+          <td><span class="fw-700">${{ "%.2f"|format(p.amount_usd) }}</span></td>
+          <td><span class="pill pill-{{ p.status }}">{{ p.status | capitalize }}</span></td>
+          <td><code style="font-size:.75rem;background:var(--bg);padding:.15rem .5rem;border-radius:5px;">{{ p.transaction_ref or '—' }}</code></td>
+          <td class="text-muted">{{ p.created_at.strftime('%d %b %Y %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon"><i class="bi bi-receipt"></i></div>
+    <h5>No payments yet</h5>
+    <p>Upgrade to a paid plan to see your payment history here.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

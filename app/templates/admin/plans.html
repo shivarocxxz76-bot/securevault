@@ -1,0 +1,112 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Plans & Payments{% endblock %}
+{% block page_title %}Plans &amp; Payments{% endblock %}
+{% block content %}
+
+<!-- Header row -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <p class="text-muted mb-0" style="font-size:.875rem;">Manage subscription plans and view payment history.</p>
+  <a href="{{ url_for('admin.add_plan') }}" class="btn btn-sv-primary btn-sm">
+    <i class="bi bi-plus-circle-fill me-1"></i>Add New Plan
+  </a>
+</div>
+
+<!-- Plan cards -->
+<div class="row g-3 mb-4">
+  {% for plan in all_plans %}
+  <div class="col-sm-6 col-xl-3">
+    <div class="sv-card h-100 {% if not plan.is_active %}opacity-50{% endif %}" style="position:relative;">
+      <!-- Status badge -->
+      <div style="position:absolute;top:.75rem;right:.75rem;">
+        <span class="pill {% if plan.is_active %}pill-active{% else %}pill-inactive{% endif %}">
+          {% if plan.is_active %}Active{% else %}Inactive{% endif %}
+        </span>
+      </div>
+
+      <div class="fw-800 mb-1" style="font-size:1rem;padding-right:70px;">{{ plan.name | capitalize }}</div>
+      <div style="font-size:1.7rem;font-weight:800;color:var(--p600);line-height:1;">
+        ${{ "%.2f"|format(plan.price_usd) }}
+        <span style="font-size:.75rem;font-weight:400;color:var(--muted);">/mo</span>
+      </div>
+      <div class="text-muted mb-1" style="font-size:.825rem;">{{ plan.storage_human }} storage</div>
+      {% if plan.description %}
+      <div class="text-muted mb-3" style="font-size:.775rem;">{{ plan.description }}</div>
+      {% else %}
+      <div class="mb-3"></div>
+      {% endif %}
+
+      <!-- Actions -->
+      <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ url_for('admin.edit_plan', plan_id=plan.id) }}"
+           class="btn btn-sm btn-outline-primary flex-fill">
+          <i class="bi bi-pencil-fill me-1"></i>Edit
+        </a>
+        <form method="POST" action="{{ url_for('admin.toggle_plan', plan_id=plan.id) }}" style="flex:1;">
+          <button type="submit"
+                  class="btn btn-sm w-100 {% if plan.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}">
+            {% if plan.is_active %}
+              <i class="bi bi-eye-slash me-1"></i>Deactivate
+            {% else %}
+              <i class="bi bi-eye me-1"></i>Activate
+            {% endif %}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Payment History -->
+<div class="sv-card">
+  <div class="section-header mb-3">
+    <div class="section-title"><i class="bi bi-receipt"></i> Payment History</div>
+    <span class="text-muted" style="font-size:.75rem;">{{ payments|length }} transaction(s)</span>
+  </div>
+  {% if payments %}
+  <div class="table-responsive">
+    <table class="sv-table">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Plan</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th>Reference</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in payments %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div style="width:26px;height:26px;background:var(--p100);border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--p700);font-size:.68rem;font-weight:700;flex-shrink:0;">
+                {{ p.username[0].upper() }}
+              </div>
+              {{ p.username }}
+            </div>
+          </td>
+          <td><span class="pill pill-{{ p.plan_name }}">{{ p.plan_name | capitalize }}</span></td>
+          <td><strong style="color:var(--success);">${{ "%.2f"|format(p.amount_usd) }}</strong></td>
+          <td><span class="pill pill-{{ p.status }}">{{ p.status | capitalize }}</span></td>
+          <td>
+            <code style="font-size:.72rem;background:var(--bg);padding:.15rem .5rem;border-radius:4px;">
+              {{ p.transaction_ref or '—' }}
+            </code>
+          </td>
+          <td class="text-muted" style="font-size:.8rem;">{{ p.created_at.strftime('%d %b %Y %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon"><i class="bi bi-receipt"></i></div>
+    <h5>No payments yet</h5>
+    <p>Payment transactions will appear here once users upgrade their plans.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

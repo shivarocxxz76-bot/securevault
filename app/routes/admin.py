@@ -25,7 +25,7 @@ def dashboard():
         'total_files':   query_db("SELECT COUNT(*) AS c FROM files WHERE is_deleted=FALSE", one=True)['c'],
         'total_folders': query_db("SELECT COUNT(*) AS c FROM folders WHERE is_deleted=FALSE", one=True)['c'],
         'open_tickets':  query_db("SELECT COUNT(*) AS c FROM support_tickets WHERE status='open'", one=True)['c'],
-        'total_storage': query_db("SELECT COALESCE(SUM(storage_used_bytes),0) AS c FROM users", one=True)['c'],
+        'total_storage': query_db("SELECT COALESCE(SUM(storage_used_bytes),0) AS c FROM users WHERE role_id != 1", one=True)['c'],
         'total_revenue': query_db("SELECT COALESCE(SUM(amount_usd),0.00) AS c FROM payments WHERE status='completed'", one=True)['c'],
     }
 
@@ -77,13 +77,13 @@ def users():
     if search:
         raw = query_db(
             """SELECT u.*, r.name AS role FROM users u JOIN roles r ON r.id=u.role_id
-               WHERE u.username ILIKE %s OR u.email ILIKE %s
+               WHERE (u.username ILIKE %s OR u.email ILIKE %s) AND u.role_id != 1
                ORDER BY u.created_at DESC""",
             (f'%{search}%', f'%{search}%')
         ) or []
     else:
         raw = query_db(
-            "SELECT u.*, r.name AS role FROM users u JOIN roles r ON r.id=u.role_id ORDER BY u.created_at DESC"
+            "SELECT u.*, r.name AS role FROM users u JOIN roles r ON r.id=u.role_id WHERE u.role_id != 1 ORDER BY u.created_at DESC"
         ) or []
 
     all_users = [dict(u) for u in raw]

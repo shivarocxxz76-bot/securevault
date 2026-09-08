@@ -8,6 +8,9 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    # Ensure upload folder exists (critical for Render /tmp/uploads)
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
     # Init DB teardown
     database.init_app(app)
 

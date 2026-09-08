@@ -88,6 +88,14 @@ def upload():
         flash('No files selected.', 'warning')
         return redirect(request.referrer or url_for('files.dashboard'))
 
+    # Ensure upload folder exists (important for Render /tmp/uploads)
+    upload_dir = current_app.config['UPLOAD_FOLDER']
+    os.makedirs(upload_dir, exist_ok=True)
+
+    # Use plain int to avoid RealDictRow mutation issues
+    storage_used = int(user['storage_used_bytes'])
+    storage_limit = int(user['storage_limit_bytes'])
+
     saved = 0
     for file in uploaded_files:
         if file.filename == '':
@@ -96,20 +104,23 @@ def upload():
             flash(f'File type not allowed: {file.filename}', 'warning')
             continue
 
-        # Read size before saving (stream doesn't give size easily)
         file_data = file.read()
         size = len(file_data)
 
         # Storage limit check
-        if user['storage_used_bytes'] + size > user['storage_limit_bytes']:
+        if storage_used + size > storage_limit:
             flash('Storage limit reached. Please upgrade your plan.', 'danger')
             break
 
         stored_name = secure_filename_uuid(file.filename)
-        save_path   = os.path.join(current_app.config['UPLOAD_FOLDER'], stored_name)
+        save_path   = os.path.join(upload_dir, stored_name)
 
-        with open(save_path, 'wb') as f:
-            f.write(file_data)
+        try:
+            with open(save_path, 'wb') as f:
+                f.write(file_data)
+        except Exception as e:
+            flash(f'Failed to save file: {file.filename}. Error: {str(e)}', 'danger')
+            continue
 
         rec = execute_db(
             """INSERT INTO files (owner_id, folder_id, original_name, stored_name, mime_type, size_bytes)
@@ -118,7 +129,7 @@ def upload():
             returning=True
         )
         _update_storage(uid, size)
-        user['storage_used_bytes'] += size  # update local copy
+        storage_used += size
         _log(uid, 'upload', 'file', rec['id'], file.filename)
         saved += 1
 
